@@ -2844,7 +2844,14 @@ const ORDEM_MESES_PT = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','J
 function calcularDASParaAnexoNoMes(anexoKey, receita, rbtSafeMes, receitaSTAnexo){
   const anexoObj = ANEXOS[anexoKey];
   const f = faixaInfo(rbtSafeMes, anexoKey);
-  const aliqEfetiva = Math.max(0, ((rbtSafeMes*f.aliq)-f.pd)/rbtSafeMes);
+  const ehTransporteIII = anexoKey==='III' && state.anexoIIITransporte;
+  // Transporte (Anexo III, LC 123/2006 art.18 §5º-E): a alíquota efetiva NÃO é a padrão do Anexo
+  // III — precisa desconsiderar o ISS da tabela e adicionar o ICMS da tabela do Anexo I na mesma
+  // faixa. Sem esse ajuste, o DAS saía sistematicamente mais alto que o valor oficial (confirmado
+  // contra um demonstrativo real: a diferença batia com o ISS que deveria ter sido removido).
+  const aliqEfetiva = ehTransporteIII
+    ? Math.max(0, aliqEfetivaAnexoIIITransporteC3(rbtSafeMes))
+    : Math.max(0, ((rbtSafeMes*f.aliq)-f.pd)/rbtSafeMes);
   const faixaPct = anexoObj.porFaixa[f.idx-1];
   const pctIcmsIssOnly = faixaPct.tributo/100;
   const pctPisCofins = (faixaPct.pis+faixaPct.cofins)/100;
@@ -3480,6 +3487,23 @@ function faixaInfo(rbt12, anexo){
       return {idx:i+1, teto:faixas[i][0], aliq:faixas[i][1], pd:faixas[i][2]};
     }
   }
+}
+
+// Anexo III — transporte intermunicipal/interestadual de cargas (e casos análogos de comunicação):
+// LC 123/2006, art. 18, §5º-E — "cálculo com base no Anexo III, desconsiderando-se o percentual
+// relativo ao ISS e adicionando-se o percentual relativo ao ICMS previsto na tabela do Anexo I".
+// Ou seja, a alíquota efetiva NÃO é simplesmente a da tabela padrão do Anexo III (que ainda tem ISS
+// embutido) — é: Aliq_efetiva_III × (1 - %ISS da faixa) + Aliq_efetiva_I × %ICMS da MESMA faixa
+// (mesmo RBT12, olhando a tabela de repartição do Anexo I pra achar o componente de ICMS daquela
+// faixa). Validado contra 6 meses de um demonstrativo oficial real — bate exato em todos.
+function aliqEfetivaAnexoIIITransporteC3(rbt12){
+  const infoIII = faixaInfo(rbt12, 'III');
+  const infoI = faixaInfo(rbt12, 'I');
+  const aliqEfIII = (rbt12*infoIII.aliq - infoIII.pd) / rbt12;
+  const aliqEfI = (rbt12*infoI.aliq - infoI.pd) / rbt12;
+  const pctIssIII = ANEXOS['III'].porFaixa[infoIII.idx-1].tributo / 100;
+  const pctIcmsI = ANEXOS['I'].porFaixa[infoI.idx-1].tributo / 100;
+  return aliqEfIII*(1-pctIssIII) + aliqEfI*pctIcmsI;
 }
 
 // % de IPI dentro do DAS do Anexo II (Indústria), por faixa de RBT12 — tabela oficial de repartição
@@ -4599,6 +4623,13 @@ function buildAtividadeC3Tabs(){
     document.getElementById('locacaoComboLabel2_c3').textContent = outroNome;
     const combo = document.getElementById('locacaoCombo_c3').checked;
     document.getElementById('locacaoComboFieldWrap_c3').style.display = combo ? 'block' : 'none';
+  }
+  // Locação Comercial não tem redutor social (esse benefício é só pra residencial, Art. 260) — zera
+  // qualquer valor deixado nos campos de uma seleção anterior de Residencial, pra não ficar um resto
+  // "escondido" que reaparece se a pessoa voltar pra Residencial mais tarde sem ter sido essa a intenção.
+  if (ehLocacaoComercial){
+    document.getElementById('redutorSocialQtdImoveis_c3').value = '1';
+    document.getElementById('redutorSocialValor_c3').value = '0,00';
   }
 }
 
@@ -6237,7 +6268,12 @@ function calcComp3(){
 
   // ---- Redutor social: locação residencial (R$600/mês, art.260) · imóvel residencial novo (R$100mil, art.259) · lote residencial (R$30mil, art.259) ----
   const REDUTOR_SOCIAL_DEFAULTS = { locacaoResidencial: 600, imovel: 100000, lotes: 30000 };
-  const temRedutorSocial = Object.prototype.hasOwnProperty.call(REDUTOR_SOCIAL_DEFAULTS, stateAtividadeC3);
+  // Locação Comercial + combo "também tenho locação residencial" marcado: há receita residencial
+  // ali dentro (somada em receitaTotalComLocacao), então o redutor social residencial (Art. 260)
+  // também se aplica — antes só aparecia com "Locação Residencial" como atividade PRINCIPAL, nunca
+  // quando a receita residencial entrava como complemento da Comercial via o combo.
+  const temRedutorSocialViaComboResidencial = stateAtividadeC3==='locacaoComercial' && locacaoComboAtivo;
+  const temRedutorSocial = Object.prototype.hasOwnProperty.call(REDUTOR_SOCIAL_DEFAULTS, stateAtividadeC3) || temRedutorSocialViaComboResidencial;
   document.getElementById('redutorSocialWrap_c3').style.display = temRedutorSocial ? 'block' : 'none';
   let redutorSocialTotalReais = 0;
   if (temRedutorSocial){
@@ -6246,7 +6282,7 @@ function calcComp3(){
       imovel: { legenda:'Redutor social — imóvel residencial novo (Art. 259)', hint:'R$100.000,00 por imóvel, dedução única na primeira venda', qtd:'Nº de imóveis residenciais novos vendidos', valor:'Redutor por imóvel (R$)' },
       lotes:  { legenda:'Redutor social — lote residencial (Art. 259)', hint:'R$30.000,00 por lote, dedução única na venda', qtd:'Nº de lotes residenciais vendidos', valor:'Redutor por lote (R$)' }
     };
-    const t = textos[stateAtividadeC3];
+    const t = temRedutorSocialViaComboResidencial ? textos.locacaoResidencial : textos[stateAtividadeC3];
     document.getElementById('redutorSocialLegend_c3').firstChild.textContent = t.legenda + ' ';
     document.getElementById('redutorSocialHint_c3').textContent = t.hint;
     document.getElementById('redutorSocialQtdLabel_c3').textContent = t.qtd;
@@ -6254,7 +6290,7 @@ function calcComp3(){
     const qtdImoveis = Math.max(0, parseFloat(document.getElementById('redutorSocialQtdImoveis_c3').value)||0);
     const valorPorImovel = Math.max(0, getMoney('redutorSocialValor_c3'));
     redutorSocialTotalReais = qtdImoveis * valorPorImovel;
-    const periodicidadeTxt = stateAtividadeC3==='locacaoResidencial' ? '/mês' : ' (dedução única na venda)';
+    const periodicidadeTxt = (stateAtividadeC3==='locacaoResidencial' || temRedutorSocialViaComboResidencial) ? '/mês' : ' (dedução única na venda)';
     document.getElementById('redutorSocialTotal_c3').textContent = `Redutor social total: ${fmt(redutorSocialTotalReais)}${periodicidadeTxt} (limitado à base de cálculo)`;
   }
   const baseCbsIbsComRedutorSocial = Math.max(0, receitaTotalComLocacao - redutorSocialTotalReais);
