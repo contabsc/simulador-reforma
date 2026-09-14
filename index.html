@@ -415,6 +415,7 @@
       <label class="brandbar-btn" for="inputCarregarSimulacao" title="Carrega um arquivo salvo anteriormente" style="cursor:pointer;">📂 Carregar simulação</label>
       <input type="file" id="inputCarregarSimulacao" accept="application/json" style="display:none;">
       <button type="button" id="btnLimparSimulacao" class="brandbar-btn" title="Apaga tudo que foi preenchido (as duas abas) e volta ao início">🗑️ Limpar simulação</button>
+      <button type="button" id="btnSairSimulacao" class="brandbar-btn" title="Sai e volta pra tela de senha — dados não salvos serão perdidos">🚪 Sair</button>
     </div>
   </div>
 </div>
@@ -1736,7 +1737,7 @@ const CNAE_LIST = [
 // Número da versão atual do app — atualizar aqui a cada nova versão publicada. Usado tanto no rótulo
 // visível na tela (pra conferir se o que está no ar bate com o que foi publicado no Git) quanto no
 // arquivo de backup exportado (campo "versaoApp"), sem precisar mudar em dois lugares separados.
-const VERSAO_APP = 'v320';
+const VERSAO_APP = 'v321';
 document.getElementById('versaoAppLabel').textContent = '· ' + VERSAO_APP;
 
 const ANEXOS = {
@@ -3850,6 +3851,15 @@ document.getElementById('btnLimparSimulacao').addEventListener('click', ()=>{
         el.removeAttribute('value');
       }
     });
+    location.reload();
+  }
+});
+document.getElementById('btnSairSimulacao').addEventListener('click', ()=>{
+  // "Sair" só recarrega a página, sem apagar nada antes e SEM pular a tela de senha (diferente do
+  // "Limpar simulação") — a pessoa volta pro gate de acesso normalmente. Como não existe nenhuma
+  // persistência entre recarregamentos nesse arquivo (é só um HTML estático), tudo que não foi salvo
+  // via "Salvar simulação" se perde — por isso confirma antes.
+  if (window.confirm('Isso vai sair da simulação e voltar pra tela de senha. Dados não salvos serão perdidos — já salvou o que precisava? Deseja continuar?')){
     location.reload();
   }
 });
