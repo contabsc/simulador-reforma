@@ -443,7 +443,6 @@
 
   <div class="eyebrow">Reforma Tributária · LC 214/2025 &amp; LC 227/2026</div>
   <h1>DAS por dentro ou CBS/IBS por fora?</h1>
-  <p class="sub">Simulador para empresas do Simples Nacional avaliarem, por Anexo, o impacto de permanecer com CBS/IBS unificados no DAS ou migrar para o regime híbrido (apuração e recolhimento separados, fora do DAS, a partir de 2027).</p>
 
   <div class="notice">
     <b>Cenário regulatório em construção.</b> A janela de opção pelo regime híbrido ocorre entre 1º e 30/09/2026 (Resolução CGSN nº 186/2026), com efeitos a partir de 01/01/2027. Até 30/11/2026 é possível confirmar a opção realizada em 30/09/2026. As alíquotas plenas de CBS/IBS e a repartição exata por Anexo ainda dependem de regulamentação complementar — os percentuais abaixo são <b>valores padrão editáveis</b>. Ajuste-os com seu contador antes de decidir.
@@ -636,7 +635,7 @@
           <button type="button" id="btnLimparImportCompras" class="pdf-valor-btn" style="margin-top:12px;">Limpar importação</button>
         </div>
 
-        <p class="hint" style="margin-top:10px;">Só PJ gera crédito. No DAS, o crédito repassado é (compras+despesas × % Simples) × "% do DAS estimado"; no Híbrido, é (compras+despesas) × "% Presumido/Real" direto — se 100%, o valor total vira base do crédito.</p>
+        <p class="hint" style="margin-top:10px;">Só PJ gera crédito. No DAS, o crédito repassado é (compras+despesas × % Simples) × "% do DAS estimado"; no Híbrido, é (compras+despesas) × "% Presumido/Real" direto — se 100%, o valor total vira base do crédito. <b>O crédito do DAS depende das alíquotas de CBS/IBS estarem preenchidas</b> ("CBS (%)"/"IBS (%)", no bloco "Período · alíquotas fora do DAS") — com elas zeradas, esse crédito sempre fica R$0,00.</p>
       </details>
 
       <fieldset id="icmsForaNormalWrap" style="display:none">
@@ -717,8 +716,11 @@
           <div class="line" id="a_st_row" style="display:none"><span>(–) ICMS/ISS não incide sobre receita com substituição tributária</span><span id="a_st">—</span></div>
           <div class="line"><span>↳ substituído por CBS</span><span id="a_subst_cbs">—</span></div>
           <div class="line"><span>↳ substituído por IBS</span><span id="a_subst_ibs">—</span></div>
-          <div class="line" id="a_credito_row" style="display:none"><span>↳ crédito repassado ao comprador</span><span id="a_credito">—</span></div>
+          <div class="line" id="a_credito_row" style="display:none"><span>↳ crédito repassado ao comprador (PIS/COFINS/ICMS-ISS embutidos no DAS)</span><span id="a_credito">—</span></div>
+          <div class="line" id="a_credito_compras_row" style="display:none; font-size:12px;"><span>↳ crédito nas compras de fornecedores do Simples</span><span id="a_credito_compras">—</span></div>
           <div class="line total"><span>Total a recolher</span><span id="a_total">—</span></div>
+          <div class="line hint-line" id="a_custo_oculto_row" style="display:none; opacity:.75; font-size:12px;"><span>↳ CBS/IBS não recuperável (compras/despesas) <span class="hint" style="display:block;">não entra no "Total a recolher" — é o custo que fica "preso" no preço pago aos fornecedores, sem virar crédito no DAS (diferente do Híbrido, que recupera esse valor); aumenta o custo real de aquisição</span></span><span id="a_custo_oculto">—</span></div>
+          <div class="line total" id="a_total_com_custo_row" style="display:none; border-top:2px solid var(--ink); margin-top:6px; padding-top:8px;"><span>Total DAS + CBS/IBS não recuperável</span><span id="a_total_com_custo">—</span></div>
           <span class="badge limited" id="a_badge">crédito limitado ao valor pago no DAS</span>
         </div>
 
@@ -767,7 +769,6 @@
 
   <div class="eyebrow">Reforma Tributária · pós-2027 · LC 214/2025</div>
   <h1>Simples × Real × Presumido, lado a lado</h1>
-  <p class="sub">Comparativo dos três regimes já considerando a reforma a partir de 01/2027: ICMS e ISS ainda coexistindo (fase de transição), CBS substituindo PIS/COFINS, e o INSS patronal sobre a folha de pagamento (que o Simples já embute no DAS, mas Real/Presumido pagam à parte).</p>
 
   <div class="notice">
     <b>Modelo simplificado de transição.</b> Em 2027, ICMS e ISS ainda respondem pela maior parte da tributação sobre consumo (a redução de fato começa a ganhar peso a partir de 2029), enquanto a CBS já substitui o PIS/COFINS integralmente. Ajuste as alíquotas de ICMS/ISS/CBS abaixo conforme a realidade do cliente e o cronograma vigente — os valores padrão são estimativas.
@@ -1258,7 +1259,7 @@
       <details class="acc">
         <summary>Compras/despesas e créditos de CBS/IBS</summary>
         <span class="redutor-tag" id="comprasPeriodBadge_c3" style="display:inline-block; margin-bottom:8px;">—</span>
-        <span class="hint">"% crédito — Real/Presumido" e "% Simples" juntos somam sempre 100% em cada linha (se um sobe, o outro desce). No Simples DAS, o crédito repassado é (compras+despesas × % Simples) × "% do DAS estimado" — ex.: 100mil × 100% Simples × 2% do DAS = R$2.000</span>
+        <span class="hint">"% crédito — Real/Presumido" e "% Simples" juntos somam sempre 100% em cada linha (se um sobe, o outro desce). No Simples DAS, o crédito repassado é (compras+despesas × % Simples) × "% do DAS estimado" — ex.: 100mil × 100% Simples × 2% do DAS = R$2.000. <b>Esse crédito depende das alíquotas de CBS/IBS estarem preenchidas</b> (abaixo, "CBS (%)"/"IBS (%)") — com elas zeradas, o crédito repassado sempre fica R$0,00, mesmo com Compras preenchidas.</span>
         <div class="row3">
           <div>
             <label style="margin-top:8px">Compras de mercadorias e matérias-primas (R$)</label>
@@ -1370,10 +1371,12 @@
           <div class="line"><span>↳ substituído por CBS</span><span id="c3_das_subst_cbs">—</span></div>
           <div class="line"><span>↳ substituído por IBS</span><span id="c3_das_subst_ibs">—</span></div>
           <div class="line total"><span>Total a recolher</span><span id="c3_das_total">—</span></div>
-          <div class="line hint-line" id="c3_das_custo_oculto_row" style="display:none; opacity:.75; font-size:12px;"><span>↳ CBS/IBS não recuperável (compras/despesas) <span class="hint" style="display:block;">não entra no total — é o custo que fica "preso" no preço pago aos fornecedores, sem virar crédito no DAS (diferente do Híbrido, que recupera esse valor)</span></span><span id="c3_das_custo_oculto">—</span></div>
+          <div class="line hint-line" id="c3_das_custo_oculto_row" style="display:none; opacity:.75; font-size:12px;"><span>↳ CBS/IBS não recuperável (compras/despesas) <span class="hint" style="display:block;">não entra no total — é o custo que fica "preso" no preço pago aos fornecedores, sem virar crédito no DAS (diferente do Híbrido, que recupera esse valor); aumenta o custo real de aquisição</span></span><span id="c3_das_custo_oculto">—</span></div>
+          <div class="line total" id="c3_das_total_com_custo_row" style="display:none; border-top:2px solid var(--ink); margin-top:6px; padding-top:8px;"><span>Total DAS + CBS/IBS não recuperável</span><span id="c3_das_total_com_custo">—</span></div>
           <span class="badge limited">crédito limitado ao valor pago no DAS</span>
           <div class="faixa-tag" id="faixaTag_c3" style="margin-top:10px;">—</div>
-          <div class="line" id="c3_das_credito_row" style="display:none"><span>↳ crédito repassado ao comprador</span><span id="c3_das_credito">—</span></div>
+          <div class="line" id="c3_das_credito_row" style="display:none"><span>↳ crédito repassado ao comprador (PIS/COFINS/ICMS-ISS embutidos no DAS)</span><span id="c3_das_credito">—</span></div>
+          <div class="line" id="c3_das_credito_compras_row" style="display:none; font-size:12px;"><span>↳ crédito nas compras de fornecedores do Simples</span><span id="c3_das_credito_compras">—</span></div>
           <div class="line" id="c3_das_pago2026_row" style="display:none"><span>Valor pago (2026)</span><span id="c3_das_pago2026">—</span></div>
           <div class="line" id="c3_das_vs2026_row" style="display:none"><span>↳ diferença (calculado − pago)</span><span id="c3_das_vs2026">—</span></div>
         </div>
@@ -1737,7 +1740,7 @@ const CNAE_LIST = [
 // Número da versão atual do app — atualizar aqui a cada nova versão publicada. Usado tanto no rótulo
 // visível na tela (pra conferir se o que está no ar bate com o que foi publicado no Git) quanto no
 // arquivo de backup exportado (campo "versaoApp"), sem precisar mudar em dois lugares separados.
-const VERSAO_APP = 'v321';
+const VERSAO_APP = 'v328';
 document.getElementById('versaoAppLabel').textContent = '· ' + VERSAO_APP;
 
 const ANEXOS = {
@@ -2191,7 +2194,9 @@ const CFOP_CLASSIFICACAO = [
 function classificarCFOP(cfopDigitos){
   // cfopDigitos = os dígitos do CFOP sem pontos, ex.: "1102", "2403" — o 1º dígito é só a
   // procedência (1=dentro do estado, 2=outro estado, 3=exterior); só esses são entradas válidas.
-  // 5/6/7 são saídas — não fazem sentido num relatório de entradas, então são descartados aqui.
+  // 5/6/7 são saídas/receitas — não fazem sentido num relatório de entradas (avisa e descarta,
+  // em vez de tratar como "não reconhecido genérico", já que o motivo aqui é bem específico).
+  if (/^[567]/.test(cfopDigitos)) return { motivo: 'saida' };
   if (!/^[123]/.test(cfopDigitos)) return null;
   const meio = cfopDigitos.slice(1);
   for (const c of CFOP_CLASSIFICACAO){ if (c.padrao.test(meio)) return c; }
@@ -2658,7 +2663,14 @@ function calcularSimplesViaMotorTab1(mesesC3){
   document.getElementById('pctCreditoDespesas').value = document.getElementById('pctCreditoRPDespesas_c3').value;
   document.getElementById('cbsRate').value = document.getElementById('cbsAliq_c3').value;
   document.getElementById('ibsRate').value = document.getElementById('ibsAliq_c3').value;
-  apuracaoMensalState.baseMeses = apuracaoMensalStateC3.baseMeses;
+  // apuracaoMensalStateC3 nunca teve um campo "baseMeses" próprio (só rbt12Base, um número simples) —
+  // então essa troca sempre resultava em "undefined", fazendo o cálculo cair na aproximação (RBT12
+  // baseado só na média mensal) mesmo quando os 12 meses reais anteriores JÁ estavam disponíveis (via
+  // Importação na Aba 1), o que produzia um DAS mensal diferente do calculado na Aba 1 — a partir do
+  // 2º mês, já que só o 1º mês usa o RBT12 "base" puro, sem depender do detalhe mês a mês. Só troca
+  // quando a Aba 2 realmente tiver seu próprio baseMeses (não existe hoje, mas deixa preparado);
+  // senão, mantém os 12 meses reais já carregados — é a fonte mais precisa disponível de qualquer forma.
+  if (apuracaoMensalStateC3.baseMeses) apuracaoMensalState.baseMeses = apuracaoMensalStateC3.baseMeses;
   apuracaoMensalState.periodoST = apuracaoMensalStateC3.periodoST;
   apuracaoMensalState.projecaoST = apuracaoMensalStateC3.projecaoST;
 
@@ -3088,20 +3100,32 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
   </tr>`;
   html += '</tbody></table>';
 
-  // Crédito repassado ao comprador (Simples DAS): (compras+despesas × % Simples) × % do DAS estimado
-  // — a MESMA fórmula do card único (calc()), que faltava aqui na tabela mês a mês. Compras/despesas
-  // são valores de período (não por mês), então mostra como uma linha só, abaixo da tabela.
+  // "Crédito repassado ao comprador" (Simples DAS): é o PIS/COFINS/IPI (federal → CBS) e ICMS/ISS
+  // (→ IBS) que JÁ ESTÃO embutidos no próprio DAS pago, conforme % de repartição da faixa/Anexo —
+  // ou seja, exatamente totalCreditoACbs+totalCreditoAIbs (já calculados acima, linha a linha), sem
+  // nenhum multiplicador adicional e sem depender de Compras/Despesas. O percentual "% do DAS
+  // estimado" e a base de Compras servem pra OUTRO crédito, diferente: o que a PRÓPRIA empresa
+  // aproveita ao comprar de fornecedores do Simples Nacional (calculado logo abaixo, separado).
+  const creditoRepassadoDASTabela = totalCreditoACbs + totalCreditoAIbs;
   const comprasParaCredito = Math.max(0, getMoney('compras'));
   const despesasParaCredito = Math.max(0, getMoney('despesasGerais'));
   const pctSimplesComprasTabela = (parseFloat(document.getElementById('pctCreditoSimplesCompras').value)||0)/100;
   const pctSimplesDespesasTabela = (parseFloat(document.getElementById('pctCreditoSimplesDespesas').value)||0)/100;
   const pctDasEstimadoTabela = (parseFloat(document.getElementById('pctDasEstimadoCompras').value)||0)/100;
   const baseSimplesTabela = comprasParaCredito*pctSimplesComprasTabela + despesasParaCredito*pctSimplesDespesasTabela;
-  // A base "% Simples" nunca pode passar do que está DENTRO do DAS de verdade (substituído por
-  // CBS+IBS no período) — só então se aplica o "% estimado de CBS/IBS" sobre essa base já limitada.
-  const creditoRepassadoDASTabelaBruto = Math.min(baseSimplesTabela, totalCreditoACbs+totalCreditoAIbs) * pctDasEstimadoTabela;
-  // Sem receita/DAS no período, não existe DAS pago — logo não há nada a repassar como crédito.
-  const creditoRepassadoDASTabela = totalDAS > 0 ? creditoRepassadoDASTabelaBruto : 0;
+  // Crédito nas COMPRAS de fornecedores do Simples Nacional (mecanismo diferente do de cima): usa o
+  // "% do DAS estimado" (padrão 2%, editável) sobre a base de compras/despesas informada na tela.
+  const creditoComprasFornecedorSimplesTabela = baseSimplesTabela * pctDasEstimadoTabela;
+  if (creditoRepassadoDASTabela > 0.5){
+    html += `<div class="line" style="display:flex; justify-content:space-between; font-size:13.5px; padding:7px 0; border-bottom:1px dashed var(--line);"><span>↳ crédito repassado ao comprador (PIS/COFINS/ICMS-ISS embutidos no DAS)</span><span>${fmt(creditoRepassadoDASTabela)}</span></div>`;
+  }
+  if (creditoComprasFornecedorSimplesTabela > 0.5){
+    html += `<div class="line" style="display:flex; justify-content:space-between; font-size:12px; padding:7px 0; border-bottom:1px dashed var(--line);"><span>↳ crédito nas compras de fornecedores do Simples (${pct(pctDasEstimadoTabela*100)} s/ compras+despesas)</span><span>${fmt(creditoComprasFornecedorSimplesTabela)}</span></div>`;
+  }
+  if (baseSimplesTabela > 0.5){
+    html += `<div class="line" style="display:flex; justify-content:space-between; font-size:12px; padding:7px 0; border-bottom:1px dashed var(--line); opacity:.75;"><span>↳ CBS/IBS não recuperável no DAS (compras/despesas)</span><span>${fmt(baseSimplesTabela)}</span></div>
+    <div class="line total" style="display:flex; justify-content:space-between; padding:7px 0; border-top:2px solid var(--ink); margin-top:6px; padding-top:8px;"><span>Total DAS + CBS/IBS não recuperável</span><span>${fmt(totalDAS + baseSimplesTabela)}</span></div>`;
+  }
   html += temMesesBaseReais
     ? `<span class="hint" style="display:block; margin-top:8px;">RBT12 <b>exato</b> de cada mês — calculado com os valores reais dos 12 meses anteriores (importados no passo 1) somados aos meses deste período.</span>`
     : `<span class="hint" style="display:block; margin-top:8px;">RBT12 girando por <b>aproximação</b> (sai a média do mês mais antigo, ${fmt(mediaMensalSaindo)}, entra a receita real do mês anterior) — para ficar exato, importe também os 12 meses anteriores no passo 1 antes de importar o período.</span>`;
@@ -3708,19 +3732,17 @@ function calc(){
     document.getElementById('a_st_row').style.display = 'none';
   }
   const creditoA = parteSubstituida; // limitado ao que foi efetivamente pago
-  // Crédito repassável ao cliente no DAS: (compras × % Simples + despesas × % Simples) × % do DAS
-  // estimado como CBS/IBS (um único percentual geral) — ex.: 100mil compras, 100% Simples, 2% do DAS
-  // estimado = R$2.000 de crédito.
+  // "Crédito repassado ao comprador": é o PIS/COFINS (→CBS) e ICMS/ISS (→IBS) já embutidos no
+  // próprio DAS pago (parteSubstituida = substCBS+substISS, calculados acima pela % de repartição
+  // da faixa/Anexo) — sem multiplicar por nada, sem depender de Compras/Despesas.
+  const creditoRepassadoDASAtual = parteSubstituida;
+  // Crédito, DIFERENTE do de cima, que a PRÓPRIA empresa aproveita ao comprar de fornecedores do
+  // Simples Nacional: usa o "% do DAS estimado" (padrão 2%, editável) sobre compras/despesas.
   const pctSimplesComprasAtual = (parseFloat(document.getElementById('pctCreditoSimplesCompras').value)||0)/100;
   const pctSimplesDespesasAtual = (parseFloat(document.getElementById('pctCreditoSimplesDespesas').value)||0)/100;
   const pctDasEstimadoAtual = (parseFloat(document.getElementById('pctDasEstimadoCompras').value)||0)/100;
   const baseSimplesAtual = compras*pctSimplesComprasAtual + despesasGerais*pctSimplesDespesasAtual;
-  // A base de compras/despesas "% Simples" nunca pode passar do que está DENTRO do DAS de verdade
-  // (parteSubstituida) — só então se aplica o "% estimado de CBS/IBS" sobre essa base já limitada.
-  const creditoRepassadoDASBruto = Math.min(baseSimplesAtual, parteSubstituida) * pctDasEstimadoAtual;
-  // Sem receita/DAS no período, não existe DAS pago — logo não há nada a repassar como crédito,
-  // mesmo que haja compras/despesas com % Simples configurado.
-  const creditoRepassadoDASAtual = totalA > 0 ? creditoRepassadoDASBruto : 0;
+  const creditoComprasFornecedorSimplesAtual = baseSimplesAtual * pctDasEstimadoAtual;
 
   // Cenário B — híbrido, CBS/IBS fora do DAS
   const dasReduzido = totalA - parteSubstituida;
@@ -3736,7 +3758,16 @@ function calc(){
   document.getElementById('a_subst_ibs').textContent = fmt(substIBS);
   document.getElementById('a_credito_row').style.display = creditoRepassadoDASAtual > 0.5 ? 'flex' : 'none';
   document.getElementById('a_credito').textContent = fmt(creditoRepassadoDASAtual);
+  document.getElementById('a_credito_compras_row').style.display = creditoComprasFornecedorSimplesAtual > 0.5 ? 'flex' : 'none';
+  document.getElementById('a_credito_compras').textContent = fmt(creditoComprasFornecedorSimplesAtual);
   document.getElementById('a_total').textContent = fmt(totalA);
+  // CBS/IBS não recuperável (mesma base do crédito do Híbrido) — no DAS puro, esse valor fica
+  // embutido no preço pago aos fornecedores, sem virar crédito, aumentando o custo real de aquisição.
+  // Informativo: não entra no "Total a recolher", só no totalizador "DAS + custo" logo abaixo dele.
+  document.getElementById('a_custo_oculto_row').style.display = baseSimplesAtual > 0.5 ? 'flex' : 'none';
+  document.getElementById('a_custo_oculto').textContent = fmt(baseSimplesAtual);
+  document.getElementById('a_total_com_custo_row').style.display = baseSimplesAtual > 0.5 ? 'flex' : 'none';
+  document.getElementById('a_total_com_custo').textContent = fmt(totalA + baseSimplesAtual);
 
   document.getElementById('b_das').textContent = fmt(dasReduzido);
   document.getElementById('b_debito').textContent = fmt(debitoCbsIbs);
@@ -5279,10 +5310,14 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
   const baseSimplesPorTrimestre = chaves.length > 0 ? baseSimplesTotal / chaves.length : 0;
   chaves.forEach(c=>{
     const g = grupos[c];
-    // A base "% Simples" nunca pode passar do que está DENTRO do DAS de verdade naquele trimestre
-    // (substituído por CBS+IBS) — só então se aplica o "% estimado de CBS/IBS" sobre a base limitada.
-    g.creditoRepassadoDAS = g.das > 0 ? Math.min(baseSimplesPorTrimestre, g.creditoACbs+g.creditoAIbs) * (pctDasEst/100) : 0;
+    // "Crédito repassado ao comprador": PIS/COFINS (→CBS) e ICMS/ISS (→IBS) já embutidos no próprio
+    // DAS daquele trimestre (g.creditoACbs+g.creditoAIbs, já calculados pela % de repartição da
+    // faixa/Anexo) — sem multiplicar por nada, sem depender de Compras/Despesas.
+    g.creditoRepassadoDAS = g.creditoACbs + g.creditoAIbs;
     g.creditoRepassadoHibrido = g.debitoCbsIbs; // crédito pleno, típico do híbrido
+    // Crédito, DIFERENTE do de cima, que a PRÓPRIA empresa aproveita ao comprar de fornecedores do
+    // Simples Nacional: usa o "% do DAS estimado" (padrão 2%, editável) sobre compras/despesas.
+    g.creditoComprasFornecedorSimples = baseSimplesPorTrimestre * (pctDasEst/100);
     // CBS/IBS não recuperável no DAS: mesma base usada acima pro crédito repassado (compras+despesas
     // × % Simples), mas aqui SEM limitar pelo DAS — é o valor cheio embutido no que foi pago aos
     // fornecedores, que no DAS puro nunca vira crédito (diferente do Híbrido, que recupera integral).
@@ -5387,9 +5422,11 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
       ${linhaHtml('↳ substituído por CBS', c=>grupos[c].creditoACbs)}
       ${linhaHtml('↳ substituído por IBS', c=>grupos[c].creditoAIbs)}
       ${linhaHtml('Total DAS', c=>grupos[c].das, {total:true})}
-      ${chaves.some(c=>grupos[c].creditoRepassadoDAS>0.5) ? linhaHtml('↳ crédito repassado ao comprador', c=>grupos[c].creditoRepassadoDAS) : ''}
+      ${chaves.some(c=>grupos[c].creditoRepassadoDAS>0.5) ? linhaHtml('↳ crédito repassado ao comprador (PIS/COFINS/ICMS-ISS embutidos no DAS)', c=>grupos[c].creditoRepassadoDAS) : ''}
+      ${chaves.some(c=>grupos[c].creditoComprasFornecedorSimples>0.5) ? `<div style="font-size:12px;">${linhaHtml('↳ crédito nas compras de fornecedores do Simples', c=>grupos[c].creditoComprasFornecedorSimples)}</div>` : ''}
       ${temIpiAtivoC3 ? linhaHtml(`↳ do qual, IPI (${pctIpiAtualC3.toFixed(2)}% do DAS — Anexo II)`, c=>grupos[c].das*(pctIpiAtualC3/100)) : ''}
       ${chaves.some(c=>grupos[c].custoOcultoDAS>0.5) ? `<div style="opacity:.7; font-size:12px; margin-top:2px;">${linhaHtml('↳ CBS/IBS não recuperável (compras/despesas)', c=>grupos[c].custoOcultoDAS)}<span class="hint" style="display:block; margin-top:-4px;">não entra no total — fica "preso" no preço pago aos fornecedores, sem virar crédito no DAS</span></div>` : ''}
+      ${chaves.some(c=>grupos[c].custoOcultoDAS>0.5) ? `<div style="border-top:2px solid var(--ink); margin-top:6px; padding-top:6px;">${linhaHtml('Total DAS + CBS/IBS não recuperável', c=>grupos[c].das+grupos[c].custoOcultoDAS, {total:true})}</div>` : ''}
     </div>`;
   }
   if (opcoes.incluirSimplesHibrido){
@@ -5614,9 +5651,11 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
       ${colunas.map(c=>`<td style="text-align:right; padding:6px;">${fmt(totais[c.key])}</td>`).join('')}
     </tr></tbody></table>`;
 
-  // Crédito repassado ao comprador (DAS/Híbrido): (compras × % Simples + despesas × % Simples) × %
-  // do DAS estimado (único) — mesma fórmula do quadro único, aplicada ao total do período mostrado
-  // (compras/despesas não têm quebra por mês na tela, usa o valor total informado).
+  // "Crédito repassado ao comprador" (DAS): é o PIS/COFINS (→CBS) e ICMS/ISS (→IBS) já embutidos no
+  // próprio DAS pago no período (totalCreditoACbsIbs, calculado abaixo linha a linha pela % de
+  // repartição da faixa/Anexo) — sem multiplicar por nada, sem depender de Compras/Despesas. O
+  // percentual "% do DAS estimado" e a base de Compras servem pra um crédito DIFERENTE: o que a
+  // PRÓPRIA empresa aproveita ao comprar de fornecedores do Simples Nacional (linha separada abaixo).
   if (opcoes.incluirSimplesDAS || opcoes.incluirSimplesHibrido){
     const pctSimplesCompras = parseFloat(document.getElementById('pctCreditoSimplesCompras_c3').value)||0;
     const pctSimplesDespesas = parseFloat(document.getElementById('pctCreditoSimplesDespesas_c3').value)||0;
@@ -5631,14 +5670,15 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
       const l = linhasPorMes ? linhasPorMes[idx] : null;
       return s + (l ? l.debitoCbsIbs : 0);
     }, 0);
-    // A base "% Simples" nunca pode passar do que está DENTRO do DAS de verdade (substituído por
-    // CBS+IBS no período) — só então se aplica o "% estimado de CBS/IBS" sobre a base limitada.
-    const creditoBaseSimples = Math.min(baseSimples, totalCreditoACbsIbs) * (pctDasEst/100);
-    // Sem receita/DAS no período, não há nada a repassar como crédito.
-    const creditoRepassadoDAS = totais.das > 0 ? creditoBaseSimples : 0;
+    const creditoRepassadoDAS = totalCreditoACbsIbs;
+    // Crédito nas COMPRAS de fornecedores do Simples Nacional (mecanismo diferente do de cima).
+    const creditoComprasFornecedorSimples = baseSimples * (pctDasEst/100);
     let linhasCredito = '';
     if (opcoes.incluirSimplesDAS && creditoRepassadoDAS > 0.5){
-      linhasCredito += `<div class="line"><span>↳ crédito repassado ao comprador — DAS (total do período)</span><span>${fmt(creditoRepassadoDAS)}</span></div>`;
+      linhasCredito += `<div class="line"><span>↳ crédito repassado ao comprador — DAS (PIS/COFINS/ICMS-ISS embutidos, total do período)</span><span>${fmt(creditoRepassadoDAS)}</span></div>`;
+    }
+    if (opcoes.incluirSimplesDAS && creditoComprasFornecedorSimples > 0.5){
+      linhasCredito += `<div class="line" style="font-size:12px;"><span>↳ crédito nas compras de fornecedores do Simples (total do período)</span><span>${fmt(creditoComprasFornecedorSimples)}</span></div>`;
     }
     if (opcoes.incluirSimplesHibrido && totalDebitoCbsIbsHibrido > 0.5){
       linhasCredito += `<div class="line"><span>↳ crédito repassado ao comprador — Híbrido (total do período)</span><span>${fmt(totalDebitoCbsIbsHibrido)}</span></div>`;
@@ -6235,15 +6275,19 @@ function calcComp3(){
     // pago ao governo.
     document.getElementById('c3_das_custo_oculto_row').style.display = creditoBaseSimples > 0.5 ? 'flex' : 'none';
     document.getElementById('c3_das_custo_oculto').textContent = fmtP(creditoBaseSimples);
+    document.getElementById('c3_das_total_com_custo_row').style.display = creditoBaseSimples > 0.5 ? 'flex' : 'none';
+    document.getElementById('c3_das_total_com_custo').textContent = fmtP(totalSimplesDAS + creditoBaseSimples);
     document.getElementById('c3_hib_das').textContent = fmtP(dasReduzidoHibrido);
     document.getElementById('c3_hib_debito').textContent = fmtP(debitoCbsIbsHibrido);
     document.getElementById('c3_hib_credito_compras').textContent = '– ' + fmtP(creditoCbsIbsHibrido);
     document.getElementById('c3_hib_total').textContent = fmtP(totalSimplesHibrido);
 
     // ---- Crédito repassado ao comprador em cada modo ----
-    // DAS: crédito = MIN(base "% Simples", parteSubstituida) × % do DAS estimado — a base nunca pode
-    // passar do que está DENTRO do DAS de verdade, senão seria crédito sem tributo correspondente.
-    creditoRepassadoDAS = Math.min(creditoBaseSimples, parteSubstituida) * (pctDasEst/100);
+    // DAS: é o PIS/COFINS (→CBS) e ICMS/ISS (→IBS) já embutidos no próprio DAS pago (parteSubstituida,
+    // calculado acima pela % de repartição da faixa/Anexo) — sem multiplicar por nada, sem depender
+    // de Compras/Despesas. O "crédito nas compras de fornecedores do Simples" (creditoRepassadoDASValor,
+    // já calculado mais acima) é um mecanismo DIFERENTE, mostrado como linha separada logo abaixo.
+    creditoRepassadoDAS = parteSubstituida;
     creditoRepassadoHibrido = debitoCbsIbsHibrido; // crédito pleno, típico do híbrido
 
     if (creditoRepassadoDAS > 0.5){      document.getElementById('c3_das_credito_row').style.display = 'flex';
@@ -6251,6 +6295,8 @@ function calcComp3(){
     } else {
       document.getElementById('c3_das_credito_row').style.display = 'none';
     }
+    document.getElementById('c3_das_credito_compras_row').style.display = creditoRepassadoDASValor > 0.5 ? 'flex' : 'none';
+    document.getElementById('c3_das_credito_compras').textContent = fmtP(creditoRepassadoDASValor);
     document.getElementById('c3_hib_credito_row').style.display = 'flex';
     document.getElementById('c3_hib_credito').textContent = fmtP(creditoRepassadoHibrido);
   }
@@ -6951,9 +6997,11 @@ async function processarImportacaoCfop(file, mesesConfirmados){
     let totalComprasElegivel = 0, totalGastosGeraisElegivel = 0;
     const porCategoria = {};
     const naoReconhecidos = [];
+    const cfopsDeSaida = [];
     linhas.forEach(l=>{
       const c = classificarCFOP(l.cfopDigitos);
       if (!c){ naoReconhecidos.push(l); return; }
+      if (c.motivo === 'saida'){ cfopsDeSaida.push(l); return; }
       if (!porCategoria[c.categoria]) porCategoria[c.categoria] = { contabil:0, compras:c.compras, gastosGerais:c.gastosGerais, cfops:new Set() };
       porCategoria[c.categoria].contabil += l.valorContabil;
       porCategoria[c.categoria].cfops.add(l.cfopTexto);
@@ -6994,6 +7042,9 @@ async function processarImportacaoCfop(file, mesesConfirmados){
       </tr>`;
     });
     html += `</tbody></table>`;
+    if (cfopsDeSaida.length > 0){
+      html += `<p class="hint" style="margin-top:8px; color:#B23B3B;">⚠ ${cfopsDeSaida.length} linha(s) com CFOP de <b>saída</b> (começam com 5, 6 ou 7) foram encontradas e ignoradas — esse relatório deveria ter só entradas. Confira se anexou o arquivo certo: ${cfopsDeSaida.map(l=>l.cfopTexto).join(', ')}</p>`;
+    }
     if (naoReconhecidos.length > 0){
       html += `<p class="hint" style="margin-top:8px; color:#B23B3B;">⚠ ${naoReconhecidos.length} linha(s) com CFOP não reconhecido, deixadas de fora da soma automática — confira manualmente: ${naoReconhecidos.map(l=>l.cfopTexto).join(', ')}</p>`;
     }
@@ -7068,10 +7119,12 @@ async function processarImportacaoCfopC3(file, mesesConfirmados){
     let totalComprasElegivel = 0, totalIcmsElegivel = 0, totalGastosGeraisElegivel = 0;
     const porCategoria = {};
     const naoReconhecidos = [];
+    const cfopsDeSaida = [];
     const atividadeEhIcms = ATIVIDADES_C3[stateAtividadeC3] && ATIVIDADES_C3[stateAtividadeC3].tributo === 'icms';
     linhas.forEach(l=>{
       const c = classificarCFOP(l.cfopDigitos);
       if (!c){ naoReconhecidos.push(l); return; }
+      if (c.motivo === 'saida'){ cfopsDeSaida.push(l); return; }
       if (!porCategoria[c.categoria]) porCategoria[c.categoria] = { contabil:0, icms:0, compras:c.compras, gastosGerais:c.gastosGerais, icms_ok:c.icms && atividadeEhIcms, cfops:new Set() };
       porCategoria[c.categoria].contabil += l.valorContabil;
       porCategoria[c.categoria].cfops.add(l.cfopTexto);
@@ -7106,28 +7159,31 @@ async function processarImportacaoCfopC3(file, mesesConfirmados){
       if (v.gastosGerais) return { texto:'Gastos', cor:'#3B6FB2', fundo:'#E8EEF7' };
       return { texto:'Excluído', cor:'#8A8578', fundo:'#EFEDE7' };
     };
-    let html = `<table style="width:100%; table-layout:fixed; border-collapse:collapse; font-family:'IBM Plex Mono',monospace; font-size:10.5px;">
+    let html = `<table style="width:100%; table-layout:fixed; border-collapse:collapse; font-family:'IBM Plex Mono',monospace; font-size:9px;">
       <thead><tr style="border-bottom:2px solid var(--line);">
-        <th style="text-align:left; padding:4px 5px; width:42%;">Categoria</th>
-        <th style="text-align:center; padding:4px 5px; width:22%;">Vai para</th>
-        <th style="text-align:right; padding:4px 5px; width:18%;">Vlr Contábil</th>
-        <th style="text-align:right; padding:4px 5px; width:18%;">Vlr ICMS</th>
+        <th style="text-align:left; padding:3px 4px; width:40%;">Categoria</th>
+        <th style="text-align:center; padding:3px 4px; width:20%;">Vai p/</th>
+        <th style="text-align:right; padding:3px 4px; width:20%;">Vlr Cont.</th>
+        <th style="text-align:right; padding:3px 4px; width:20%;">Vlr ICMS</th>
       </tr></thead><tbody>`;
     Object.entries(porCategoria).forEach(([cat, v])=>{
       const d = destino(v);
       html += `<tr style="border-bottom:1px solid var(--line);">
-        <td style="padding:4px 5px; word-break:break-word;">${cat} <span style="color:var(--body); font-size:9.5px;">${Array.from(v.cfops).join(', ')}</span></td>
-        <td style="text-align:center; padding:4px 5px;">
-          <span style="display:inline-block; padding:1px 6px; border-radius:8px; background:${d.fundo}; color:${d.cor}; font-weight:600; font-size:9.5px; white-space:nowrap;">${d.texto}</span>
-          ${v.icms_ok ? '<span style="display:block; margin-top:2px; font-size:8.5px; color:var(--body);">+ ICMS</span>' : ''}
+        <td style="padding:3px 4px; word-break:break-word; line-height:1.3;">${cat}<br><span style="color:var(--body); font-size:8px;">${Array.from(v.cfops).join(', ')}</span></td>
+        <td style="text-align:center; padding:3px 4px;">
+          <span style="display:inline-block; padding:1px 5px; border-radius:7px; background:${d.fundo}; color:${d.cor}; font-weight:600; font-size:8px; white-space:nowrap;">${d.texto}</span>
+          ${v.icms_ok ? '<span style="display:block; margin-top:1px; font-size:7.5px; color:var(--body);">+ICMS</span>' : ''}
         </td>
-        <td style="text-align:right; padding:4px 5px;">${fmt(v.contabil)}</td>
-        <td style="text-align:right; padding:4px 5px;">${fmt(v.icms)}</td>
+        <td style="text-align:right; padding:3px 4px;">${fmt(v.contabil)}</td>
+        <td style="text-align:right; padding:3px 4px;">${fmt(v.icms)}</td>
       </tr>`;
     });
     html += `</tbody></table>`;
     if (!atividadeEhIcms){
       html += `<p class="hint" style="margin-top:8px;">Atividade atual é de serviços (ISS) — crédito de ICMS não se aplica e não foi somado, mesmo nas categorias com ICMS na entrada.</p>`;
+    }
+    if (cfopsDeSaida.length > 0){
+      html += `<p class="hint" style="margin-top:8px; color:#B23B3B;">⚠ ${cfopsDeSaida.length} linha(s) com CFOP de <b>saída</b> (começam com 5, 6 ou 7) foram encontradas e ignoradas — esse relatório deveria ter só entradas. Confira se anexou o arquivo certo: ${cfopsDeSaida.map(l=>l.cfopTexto).join(', ')}</p>`;
     }
     if (naoReconhecidos.length > 0){
       html += `<p class="hint" style="margin-top:8px; color:#B23B3B;">⚠ ${naoReconhecidos.length} linha(s) com CFOP não reconhecido, deixadas de fora da soma automática — confira manualmente: ${naoReconhecidos.map(l=>l.cfopTexto).join(', ')}</p>`;
