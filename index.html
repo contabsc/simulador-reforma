@@ -474,6 +474,7 @@
       <input type="text" id="cnaeInput" placeholder="ex.: 4711-3/02 ou 'padaria'" autocomplete="off">
       <div id="cnaeResultados" style="display:none; margin-bottom:10px;"></div>
       <div class="notice" id="cnaeAvisoNaoEncontrado" style="display:none; margin-bottom:10px;">CNAE não encontrado na lista representativa — selecione o Anexo manualmente abaixo e confirme com o contador.</div>
+      <div class="notice" id="impeditivoSimplesAviso" style="display:none; margin-bottom:10px;"></div>
       <button type="button" class="pdf-valor-btn" id="btnImportarDaAba2" style="margin-top:4px; margin-bottom:10px;">↔ Importar dados da Aba 2 (Comparativo)</button>
       <span class="hint" id="hintImportarDaAba2" style="display:block; margin-top:-6px; margin-bottom:10px;">traz CNPJ/CNAE, cliente, RBT12/RBA, Anexo(s) e a receita mensal já importada na Aba 2</span>
       <button type="button" class="pdf-valor-btn" id="btnLimparAtividade" style="margin-top:4px; margin-bottom:10px;">Limpar atividade</button>
@@ -682,7 +683,7 @@
     </div>
 
     <!-- RESULTS -->
-    <div>
+    <div id="resultadosAba1Wrap">
       <div class="results-head">
         <h2>Comparação de cenários</h2>
         <span class="faixa-tag" id="faixaTag">—</span>
@@ -836,22 +837,7 @@
         <input type="text" inputmode="decimal" class="money" id="receitaOutraLocacao_c3" value="0,00">
       </div>
 
-      <div id="redutorSocialWrap_c3" style="display:none">
-        <label style="margin-top:10px" id="redutorSocialLegend_c3">Redutor social (LC 214/2025)
-          <span class="hint" id="redutorSocialHint_c3">dedução fixa na base de cálculo do IBS/CBS (valor atualizado por IPCA)</span>
-        </label>
-        <div class="row2">
-          <div>
-            <label style="margin-top:0" id="redutorSocialQtdLabel_c3">Nº de imóvel(is)</label>
-            <input type="number" id="redutorSocialQtdImoveis_c3" value="1" step="1" min="0">
-          </div>
-          <div>
-            <label style="margin-top:0" id="redutorSocialValorLabel_c3">Redutor por unidade (R$)</label>
-            <input type="text" inputmode="decimal" class="money" id="redutorSocialValor_c3" value="600,00">
-          </div>
-        </div>
-        <div class="redutor-tag" id="redutorSocialTotal_c3">—</div>
-      </div>
+      <div id="redutorSocialContainer_c3"></div>
 
       <div class="notice" id="impeditivoSimplesAviso_c3" style="display:none; margin-bottom:10px;"></div>
       <div class="notice" id="realObrigatorioAviso_c3" style="display:none; margin-bottom:10px;"></div>
@@ -1640,11 +1626,8 @@ const CNAE_LIST = [
   { codigo:"4681-8/01", desc:"Comércio atacadista de combustíveis realizado por transportador retalhista", anexo:"I", atividade:"comercio" },
   { codigo:"4731-8/00", desc:"Comércio varejista de combustíveis para veículos - postos de gasolina", anexo:"I", atividade:"comercio" },
   { codigo:"4785-7/01", desc:"Comércio varejista de artigos usados - brechós", anexo:"I", atividade:"comercio" },
-  { codigo:"4789-0/05", desc:"Comércio varejista de produtos saneantes domissanitários", anexo:"I", atividade:"comercio" },
   { codigo:"4789-0/07", desc:"Comércio varejista de animais vivos e de artigos e alimentos para animais - pet shop (produtos)", anexo:"I", atividade:"comercio" },
   { codigo:"4763-6/03", desc:"Comércio varejista de bicicletas e triciclos, peças e acessórios", anexo:"I", atividade:"comercio" },
-  { codigo:"4772-5/00", desc:"Comércio varejista de cosméticos, produtos de perfumaria e de higiene pessoal", anexo:"I", atividade:"comercio" },
-  { codigo:"4783-1/01", desc:"Comércio varejista de artigos de joalheria", anexo:"I", atividade:"comercio" },
   { codigo:"4783-1/02", desc:"Comércio varejista de artigos de bijuteria", anexo:"I", atividade:"comercio" },
   { codigo:"4789-0/04", desc:"Comércio varejista de plantas e flores naturais", anexo:"I", atividade:"comercio" },
   { codigo:"4541-2/06", desc:"Comércio a varejo de peças e acessórios para motocicletas", anexo:"I", atividade:"comercio" },
@@ -1653,13 +1636,11 @@ const CNAE_LIST = [
   // ---- Anexo II — Indústria (ampliação) ----
   { codigo:"1811-3/01", desc:"Impressão de material para uso publicitário - gráfica", anexo:"II", atividade:"comercio" },
   { codigo:"1813-0/99", desc:"Serviços de pré-impressão e acabamentos gráficos", anexo:"II", atividade:"comercio" },
-  { codigo:"1113-5/02", desc:"Fabricação de refrigerantes", anexo:"II", atividade:"comercio" },
   { codigo:"2063-1/00", desc:"Fabricação de cosméticos, produtos de perfumaria e de higiene pessoal", anexo:"II", atividade:"comercio" },
   { codigo:"2062-2/00", desc:"Fabricação de produtos de limpeza e polimento", anexo:"II", atividade:"comercio" },
   { codigo:"1540-8/00", desc:"Fabricação de calçados de couro", anexo:"II", atividade:"comercio" },
   { codigo:"3329-5/01", desc:"Serviços de montagem de móveis de qualquer material", anexo:"II", atividade:"comercio" },
   { codigo:"3250-7/07", desc:"Fabricação de artigos ópticos", anexo:"II", atividade:"comercio" },
-  { codigo:"1622-6/02", desc:"Fabricação de esquadrias de madeira", anexo:"II", atividade:"comercio" },
 
   // ---- Anexo III — Serviços (ampliação, inclusive §5-B fixo por lei) ----
   { codigo:"4922-1/01", desc:"Transporte rodoviário coletivo de passageiros, municipal", anexo:"III", atividade:"servico" },
@@ -1726,21 +1707,96 @@ const CNAE_LIST = [
   { codigo:"8690-9/01", desc:"Atividades de práticas integrativas e complementares em saúde humana", anexo:"FATOR_R", atividade:"saude" },
   // ---- Locação, venda de imóveis, lotes, intermediação imobiliária, alimentos ----
   { codigo:"6810-2/02", desc:"Aluguel de imóveis próprios - residencial", anexo:"III", atividade:"locacaoResidencial" },
-  { codigo:"6810-2/02", desc:"Aluguel de imóveis próprios - comercial/salas/lojas", anexo:"III", atividade:"locacaoComercial" },
   { codigo:"6810-2/01", desc:"Compra e venda de imóveis próprios residenciais", anexo:"I", atividade:"imovel" },
   { codigo:"4110-7/00", desc:"Incorporação de empreendimentos imobiliários residenciais", anexo:"I", atividade:"imovel" },
-  { codigo:"4110-7/00", desc:"Loteamento de imóveis residenciais", anexo:"I", atividade:"lotes" },
+  { codigo:"6421-2/00", desc:"Bancos comerciais", anexo:"I", atividade:"bancoFinanceira" },
+  { codigo:"6422-1/00", desc:"Bancos múltiplos, com carteira comercial", anexo:"I", atividade:"bancoFinanceira" },
+  { codigo:"6423-9/00", desc:"Caixas econômicas", anexo:"I", atividade:"bancoFinanceira" },
+  { codigo:"6424-7/01", desc:"Cooperativas de crédito mútuo", anexo:"I", atividade:"cooperativaCredito" },
+  { codigo:"6424-7/02", desc:"Cooperativas de crédito rural", anexo:"I", atividade:"cooperativaCredito" },
+  { codigo:"6612-6/01", desc:"Corretoras de títulos e valores mobiliários", anexo:"III", atividade:"corretoraValores" },
+  { codigo:"6612-6/02", desc:"Distribuidoras de títulos e valores mobiliários", anexo:"III", atividade:"corretoraValores" },
+  { codigo:"6612-6/03", desc:"Corretoras de câmbio", anexo:"III", atividade:"corretoraValores" },
+  { codigo:"6511-1/01", desc:"Seguros de vida", anexo:"I", atividade:"seguradora" },
+  { codigo:"6511-1/02", desc:"Seguros não vida", anexo:"I", atividade:"seguradora" },
+  { codigo:"6520-1/00", desc:"Seguros-saúde", anexo:"I", atividade:"seguradora" },
+  { codigo:"6541-3/00", desc:"Previdência complementar fechada", anexo:"I", atividade:"seguradora" },
+  { codigo:"6499-9/99", desc:"Factoring/fomento comercial", anexo:"III", atividade:"factoring" },
   { codigo:"6821-8/01", desc:"Corretagem na compra, venda e locação de imóveis", anexo:"III", atividade:"intermediacaoImobiliaria" },
   { codigo:"6822-6/00", desc:"Gestão e administração da propriedade imobiliária", anexo:"III", atividade:"intermediacaoImobiliaria" },
   { codigo:"4721-1/01", desc:"Comércio varejista de produtos alimentícios em geral - cesta básica", anexo:"I", atividade:"alimentos" },
-  { codigo:"1091-1/01", desc:"Fabricação de pão - alimento de consumo humano", anexo:"II", atividade:"alimentos" },
-  { codigo:"1012-1/01", desc:"Abate de aves - alimento de consumo humano", anexo:"II", atividade:"alimentos" }
+  { codigo:"1012-1/01", desc:"Abate de aves - alimento de consumo humano", anexo:"II", atividade:"alimentos" },
+
+  // ---- Anexo I — Comércio (2ª ampliação) ----
+  { codigo:"4530-7/02", desc:"Comércio a varejo de peças e acessórios usados para veículos automotores", anexo:"I", atividade:"comercio" },
+  { codigo:"4542-1/01", desc:"Comércio a varejo de motocicletas usadas", anexo:"I", atividade:"comercio" },
+  { codigo:"4732-6/00", desc:"Comércio varejista de lubrificantes", anexo:"I", atividade:"comercio" },
+  { codigo:"4764-6/01", desc:"Comércio varejista de artigos de caça e pesca", anexo:"I", atividade:"comercio" },
+  { codigo:"4784-9/00", desc:"Comércio varejista de gás liquefeito de petróleo (GLP)", anexo:"I", atividade:"comercio" },
+  { codigo:"4789-0/01", desc:"Comércio varejista de suvenires, bijuterias e artesanatos", anexo:"I", atividade:"comercio" },
+  { codigo:"4789-0/02", desc:"Comércio varejista de plantas e flores naturais", anexo:"I", atividade:"comercio" },
+  { codigo:"4791-1/00", desc:"Comércio varejista por catálogo", anexo:"I", atividade:"comercio" },
+  { codigo:"4763-6/04", desc:"Comércio varejista de jogos e brinquedos eletrônicos", anexo:"I", atividade:"comercio" },
+  { codigo:"4649-4/08", desc:"Comércio atacadista de produtos de higiene, limpeza e conservação domiciliar", anexo:"I", atividade:"comercio" },
+  { codigo:"4622-2/00", desc:"Comércio atacadista de produtos de fumo", anexo:"I", atividade:"comercio" },
+  { codigo:"4632-0/01", desc:"Comércio atacadista de cereais e leguminosas beneficiados", anexo:"I", atividade:"comercio" },
+  { codigo:"4634-6/01", desc:"Comércio atacadista de carnes bovinas e suínas e derivados", anexo:"I", atividade:"comercio" },
+  { codigo:"4644-3/01", desc:"Comércio atacadista de medicamentos e drogas de uso humano", anexo:"I", atividade:"comercio" },
+  { codigo:"4651-6/01", desc:"Comércio atacadista de computadores, periféricos e suprimentos de informática", anexo:"I", atividade:"comercio" },
+  { codigo:"4663-0/00", desc:"Comércio atacadista de máquinas e equipamentos para uso comercial", anexo:"I", atividade:"comercio" },
+  { codigo:"4671-1/00", desc:"Comércio atacadista de madeira e produtos derivados", anexo:"I", atividade:"comercio" },
+  { codigo:"4691-5/00", desc:"Comércio atacadista de mercadorias em geral, com predominância de insumos agropecuários", anexo:"I", atividade:"comercio" },
+
+  // ---- Anexo II — Indústria (2ª ampliação) ----
+  { codigo:"1051-1/00", desc:"Preparação do leite", anexo:"II", atividade:"comercio" },
+  { codigo:"1071-6/00", desc:"Fabricação de açúcar em bruto", anexo:"II", atividade:"comercio" },
+  { codigo:"1610-2/01", desc:"Serrarias com desdobramento de madeira", anexo:"II", atividade:"comercio" },
+  { codigo:"1710-9/00", desc:"Fabricação de celulose e outras pastas para fabricação de papel", anexo:"II", atividade:"comercio" },
+  { codigo:"1732-1/00", desc:"Fabricação de embalagens de papel", anexo:"II", atividade:"comercio" },
+  { codigo:"2032-5/00", desc:"Fabricação de resinas termoplásticas", anexo:"II", atividade:"comercio" },
+  { codigo:"2223-4/00", desc:"Fabricação de artefatos de material plástico para uso pessoal e doméstico", anexo:"II", atividade:"comercio" },
+  { codigo:"3211-6/01", desc:"Lapidação de gemas", anexo:"II", atividade:"comercio" },
+  { codigo:"3240-0/01", desc:"Fabricação de jogos eletrônicos", anexo:"II", atividade:"comercio" },
+  { codigo:"3299-0/05", desc:"Fabricação de canetas, lápis e outros artigos para escritório", anexo:"II", atividade:"comercio" },
+
+  // ---- Anexo III — Serviços não-Fator R (2ª ampliação) ----
+  { codigo:"5211-7/01", desc:"Armazéns gerais - emissão de warrant", anexo:"III", atividade:"servico" },
+  { codigo:"5612-1/00", desc:"Serviços ambulantes de alimentação", anexo:"III", atividade:"restauranteBar" },
+  { codigo:"5620-1/02", desc:"Serviços de alimentação para eventos e recepções - bufê", anexo:"III", atividade:"restauranteBar" },
+  { codigo:"5510-8/02", desc:"Apart-hotéis", anexo:"III", atividade:"hotelaria" },
+  { codigo:"5510-8/03", desc:"Motéis", anexo:"III", atividade:"hotelaria" },
+  { codigo:"5590-6/02", desc:"Pensões (alojamento)", anexo:"III", atividade:"hotelaria" },
+  { codigo:"5590-6/03", desc:"Albergues, exceto assistenciais", anexo:"III", atividade:"hotelaria" },
+  { codigo:"9311-5/00", desc:"Gestão de instalações de esportes", anexo:"III", atividade:"eventos" },
+  { codigo:"9321-2/00", desc:"Parques de diversão e parques temáticos", anexo:"III", atividade:"eventos" },
+  { codigo:"9329-8/01", desc:"Discotecas, danceterias, salões de dança e similares", anexo:"III", atividade:"eventos" },
+  { codigo:"8640-2/07", desc:"Serviços de diagnóstico por imagem com uso de radiação ionizante, exceto tomografia", anexo:"III", atividade:"saude" },
+  { codigo:"8660-7/00", desc:"Atividades de apoio à gestão de saúde", anexo:"III", atividade:"saude" },
+  { codigo:"8712-3/00", desc:"Atividades de fornecimento de infraestrutura de apoio e assistência a paciente no domicílio", anexo:"III", atividade:"saude" },
+
+  // ---- Anexo IV (2ª ampliação) ----
+  { codigo:"4322-3/02", desc:"Instalação e manutenção de sistemas centrais de ar condicionado, ventilação e refrigeração", anexo:"IV", atividade:"servico" },
+  { codigo:"4399-1/01", desc:"Administração de obras", anexo:"IV", atividade:"servico" },
+  { codigo:"8011-1/01", desc:"Atividades de vigilância e segurança privada", anexo:"IV", atividade:"servico" },
+  { codigo:"8011-1/02", desc:"Serviços de adestramento de cães de guarda", anexo:"IV", atividade:"servico" },
+  { codigo:"8012-9/00", desc:"Atividades de transporte de valores", anexo:"IV", atividade:"servico" },
+
+  // ---- Sujeitas ao Fator R (2ª ampliação, profissões regulamentadas e serviços intelectuais) ----
+  { codigo:"8621-6/01", desc:"UTI móvel", anexo:"FATOR_R", atividade:"regulamentado" },
+  { codigo:"8621-6/02", desc:"Serviços móveis de atendimento a urgências, exceto por UTI móvel", anexo:"FATOR_R", atividade:"regulamentado" },
+  { codigo:"8622-4/00", desc:"Serviços de remoção de pacientes, exceto os serviços móveis de atendimento a urgências", anexo:"FATOR_R", atividade:"regulamentado" },
+  { codigo:"8631-5/00", desc:"Atividade odontológica", anexo:"FATOR_R", atividade:"regulamentado" },
+  { codigo:"8650-0/05", desc:"Atividades de fonoaudiologia", anexo:"FATOR_R", atividade:"regulamentado" },
+  { codigo:"6910-8/01", desc:"Serviços advocatícios (variação de registro)", anexo:"FATOR_R", atividade:"regulamentado" },
+  { codigo:"6621-5/01", desc:"Peritos e avaliadores de seguros", anexo:"FATOR_R", atividade:"regulamentado" },
+  { codigo:"6629-1/00", desc:"Atividades auxiliares dos seguros, da previdência complementar e dos planos de saúde não especificadas anteriormente", anexo:"FATOR_R", atividade:"regulamentado" },
+  { codigo:"6810-2/03", desc:"Loteamento de imóveis próprios (comercial)", anexo:"I", atividade:"lotes" }
 ];
 
 // Número da versão atual do app — atualizar aqui a cada nova versão publicada. Usado tanto no rótulo
 // visível na tela (pra conferir se o que está no ar bate com o que foi publicado no Git) quanto no
 // arquivo de backup exportado (campo "versaoApp"), sem precisar mudar em dois lugares separados.
-const VERSAO_APP = 'v328';
+const VERSAO_APP = 'v334';
 document.getElementById('versaoAppLabel').textContent = '· ' + VERSAO_APP;
 
 const ANEXOS = {
@@ -2336,13 +2392,29 @@ function configurarImportacaoReceitaPeriodo(fileInputId, perguntaId, labelAnexoI
       const cbDAS = document.getElementById('incluirSimplesDAS');
       const cbHibrido = document.getElementById('incluirSimplesHibrido');
       const usarNomenclaturaNegocio = fileInputId.endsWith('C3') && cbDAS && cbHibrido && !cbDAS.checked && !cbHibrido.checked;
-      document.getElementById(labelAnexoId).textContent = usarNomenclaturaNegocio ? 'Esse PDF é de receita de:' : 'Esse PDF é do Anexo:';
-      document.getElementById(selectAnexoId).innerHTML = Array.from(anexosAtivosSetFn()).map(a=>{
-        const label = usarNomenclaturaNegocio
-          ? (ANEXO_TIPO_C3_LABEL[a]==='comercio' ? `Receita do Comércio/Indústria (ex-Anexo ${a})` : `Receita de Serviços (ex-Anexo ${a})`)
-          : `Anexo ${a}`;
-        return `<option value="${a}">${label}</option>`;
-      }).join('');
+      // Quando há mais de uma ATIVIDADE ativa na Aba 2 (não só mais de um Anexo), mostra cada
+      // atividade separadamente no seletor (ex.: "Locação residencial", "Venda de lotes"), em vez do
+      // Anexo genérico — mesmo quando duas atividades compartilham o mesmo Anexo (ex.: locação
+      // residencial e comercial são as duas Anexo III), permitindo escolher qual delas é esse PDF
+      // específico. Isso não muda o Anexo usado no cálculo (só ajuda a escolher a opção certa).
+      const usarAtividadesC3 = fileInputId.endsWith('C3') && typeof stateAtividadesAtivasC3 !== 'undefined' && stateAtividadesAtivasC3.size > 1;
+      document.getElementById(labelAnexoId).textContent = usarNomenclaturaNegocio ? 'Esse PDF é de receita de:' : (usarAtividadesC3 ? 'Esse PDF é da atividade:' : 'Esse PDF é do Anexo:');
+      if (usarAtividadesC3){
+        document.getElementById(selectAnexoId).innerHTML = Array.from(stateAtividadesAtivasC3).map(atividade=>{
+          const nomeAtividade = (typeof ATIVIDADES_C3 !== 'undefined' && ATIVIDADES_C3[atividade]) ? ATIVIDADES_C3[atividade].nome : atividade;
+          const anexoDaAtividade = (typeof ATIVIDADE_ANEXO_PADRAO_C3 !== 'undefined' ? ATIVIDADE_ANEXO_PADRAO_C3[atividade] : null) || '';
+          // O value continua sendo o Anexo real (é o que o resto do sistema usa pra somar/calcular) —
+          // só o TEXTO mostrado na tela é que vira o nome da atividade específica.
+          return `<option value="${anexoDaAtividade}">${nomeAtividade}</option>`;
+        }).join('');
+      } else {
+        document.getElementById(selectAnexoId).innerHTML = Array.from(anexosAtivosSetFn()).map(a=>{
+          const label = usarNomenclaturaNegocio
+            ? (ANEXO_TIPO_C3_LABEL[a]==='comercio' ? `Receita do Comércio/Indústria (ex-Anexo ${a})` : `Receita de Serviços (ex-Anexo ${a})`)
+            : `Anexo ${a}`;
+          return `<option value="${a}">${label}</option>`;
+        }).join('');
+      }
     }
     document.getElementById(selectTipoId).value = 'normal';
     document.getElementById(perguntaId).style.display = 'block';
@@ -3926,6 +3998,17 @@ document.getElementById('btnLimparImportMensal').addEventListener('click', ()=>{
 document.getElementById('cnaeInput').addEventListener('input', ()=>{
   buscarCNAE('cnaeInput','cnaeResultados','cnaeAvisoNaoEncontrado', (c)=>{
     document.getElementById('cnaeInput').value = `${c.codigo} — ${c.desc}`;
+    const avisoImpeditivoEl = document.getElementById('impeditivoSimplesAviso');
+    const motivoImpeditivo = c.atividade && ATIVIDADES_C3[c.atividade] && ATIVIDADES_C3[c.atividade].impeditivoSimples;
+    if (motivoImpeditivo){
+      avisoImpeditivoEl.style.display = 'block';
+      avisoImpeditivoEl.innerHTML = `<b>Simples Nacional não permitido — atividade impeditiva.</b> ${motivoImpeditivo} O cálculo abaixo fica desabilitado até trocar de CNAE.`;
+      document.getElementById('resultadosAba1Wrap').style.display = 'none';
+      document.getElementById('fatorRWrap').style.display = 'none';
+      return;
+    }
+    avisoImpeditivoEl.style.display = 'none';
+    document.getElementById('resultadosAba1Wrap').style.display = '';
     if (c.anexo === 'FATOR_R'){
       document.getElementById('fatorRWrap').style.display = 'block';
       atualizarFatorR();
@@ -4033,12 +4116,31 @@ async function buscarAtividadesPorCNPJ(){
       const anexosAcumulados = new Set();
       let temFatorR = false;
       let temTransporteIII = false;
+      const motivosImpeditivos = [];
       selecionados.forEach(b=>{
         const m = CNAE_LIST.find(c => normalizarTexto(c.codigo) === normalizarTexto(b.dataset.codigo));
         if (m && m.anexo !== 'FATOR_R') anexosAcumulados.add(m.anexo);
         if (m && m.anexo === 'FATOR_R') temFatorR = true;
         if (m && m.anexo === 'III' && m.transporte) temTransporteIII = true;
+        // Alguns CNAEs (locação de imóveis próprios, incorporação, loteamento) são vedados ao Simples
+        // Nacional (Art. 17 da LC 123/2006) — mesmo que a receita venha por um Anexo "normal" aqui, a
+        // atividade em si impede a opção pelo regime. Reaproveita o mesmo motivo já cadastrado em
+        // ATIVIDADES_C3 (Aba 2), pra não duplicar a lista de exceções em dois lugares.
+        if (m && m.atividade && ATIVIDADES_C3[m.atividade] && ATIVIDADES_C3[m.atividade].impeditivoSimples){
+          const motivo = ATIVIDADES_C3[m.atividade].impeditivoSimples;
+          if (!motivosImpeditivos.includes(motivo)) motivosImpeditivos.push(motivo);
+        }
       });
+      const avisoImpeditivoEl = document.getElementById('impeditivoSimplesAviso');
+      if (motivosImpeditivos.length > 0){
+        avisoImpeditivoEl.style.display = 'block';
+        avisoImpeditivoEl.innerHTML = `<b>Simples Nacional não permitido — atividade impeditiva encontrada.</b> ${motivosImpeditivos.join(' ')} O cálculo abaixo fica desabilitado até remover esse CNAE da seleção.`;
+        document.getElementById('resultadosAba1Wrap').style.display = 'none';
+        return;
+      } else {
+        avisoImpeditivoEl.style.display = 'none';
+        document.getElementById('resultadosAba1Wrap').style.display = '';
+      }
       if (anexosAcumulados.size > 0){
         state.anexosAtivos = anexosAcumulados;
         state.anexo = Array.from(anexosAcumulados)[anexosAcumulados.size-1];
@@ -4226,9 +4328,7 @@ document.getElementById('btnLimparAtividadeC3').addEventListener('click', ()=>{
   document.getElementById('locacaoCombo_c3').checked = false;
   document.getElementById('receitaOutraLocacao_c3').value = '0,00';
   document.getElementById('receitaOutraLocacao_c3').dispatchEvent(new Event('input'));
-  document.getElementById('redutorSocialQtdImoveis_c3').value = '1';
-  document.getElementById('redutorSocialValor_c3').value = '600,00';
-  document.getElementById('redutorSocialValor_c3').dispatchEvent(new Event('input'));
+  window.redutorSocialValoresC3 = {};
   document.getElementById('fatorRWrapC3').style.display = 'none';
   state3.anexo = 'I'; state3.anexosAtivos = new Set(['I']); state3.anexoIIITransporte = false;
   stateAtividadeC3 = 'comercio';
@@ -4446,6 +4546,11 @@ const ATIVIDADES_C3 = {
   imovel:   { nome:"Venda/Incorporação de imóveis (50%)", presIrpj:8, presCsll:12, tributo:"nenhum", redutor:50, ratPct:1, impeditivoSimples:"Art. 17, XIV, da LC 123/2006 — incorporação de imóveis é vedada ao Simples Nacional." },
   lotes:    { nome:"Venda de lotes (residencial e comercial)", presIrpj:8, presCsll:12, tributo:"nenhum", redutor:50, ratPct:1, impeditivoSimples:"Art. 17, XIV, da LC 123/2006 — loteamento de imóveis é vedado ao Simples Nacional." },
   intermediacaoImobiliaria: { nome:"Administração/intermediação imobiliária", presIrpj:32, presCsll:32, tributo:"iss", redutor:0, ratPct:1 },
+  bancoFinanceira: { nome:"Banco/instituição financeira", presIrpj:16, presCsll:12, tributo:"nenhum", redutor:0, ratPct:1, impeditivoSimples:"Art. 17, I, da LC 123/2006 — bancos comerciais, de investimento e de desenvolvimento, caixas econômicas e demais instituições financeiras são vedados ao Simples Nacional." },
+  cooperativaCredito: { nome:"Cooperativa de crédito", presIrpj:16, presCsll:12, tributo:"nenhum", redutor:0, ratPct:1, impeditivoSimples:"Art. 17, I, da LC 123/2006 — cooperativas de crédito são vedadas ao Simples Nacional." },
+  corretoraValores: { nome:"Corretora/distribuidora de valores mobiliários, câmbio", presIrpj:16, presCsll:12, tributo:"iss", redutor:0, ratPct:1, impeditivoSimples:"Art. 17, II, da LC 123/2006 — corretoras e distribuidoras de títulos, valores mobiliários e câmbio são vedadas ao Simples Nacional." },
+  seguradora: { nome:"Seguradora/previdência privada", presIrpj:16, presCsll:12, tributo:"nenhum", redutor:0, ratPct:1, impeditivoSimples:"Art. 17, III, da LC 123/2006 — empresas de seguros privados e de capitalização, e entidades de previdência privada aberta, são vedadas ao Simples Nacional." },
+  factoring: { nome:"Factoring/fomento mercantil", presIrpj:32, presCsll:32, tributo:"iss", redutor:0, ratPct:1, impeditivoSimples:"Art. 17, XXVII (e Art. 3º, §4º, VIII), da LC 123/2006 — empresas que exerçam factoring/fomento comercial são vedadas ao Simples Nacional." },
   alimentos: { nome:"Alimentos (consumo humano, 60%)", presIrpj:8, presCsll:12, tributo:"icms", redutor:60, ratPct:1 },
   frutasVerduras: { nome:"Frutas e verduras (alíquota zero)", presIrpj:8, presCsll:12, tributo:"icms", redutor:100, ratPct:1 },
   hotelaria: { nome:"Hotelaria/Hospedagem (40%)", presIrpj:32, presCsll:32, tributo:"iss", redutor:40, ratPct:2 },
@@ -4457,7 +4562,9 @@ let stateAtividadeC3 = "comercio";
 const ATIVIDADE_ANEXO_PADRAO_C3 = {
   comercio:'I', servico:'III', regulamentado:'IV', saude:'III',
   locacaoResidencial:'III', locacaoComercial:'III', imovel:'I', lotes:'I',
-  intermediacaoImobiliaria:'III', alimentos:'I', frutasVerduras:'I',
+  intermediacaoImobiliaria:'III', bancoFinanceira:'I', cooperativaCredito:'I',
+  corretoraValores:'III', seguradora:'I', factoring:'III',
+  alimentos:'I', frutasVerduras:'I',
   hotelaria:'III', restauranteBar:'I', eventos:'III'
 };
 // Presunção padrão do Lucro Presumido por Anexo — Anexo I/II (comércio/indústria) usa 8%/12%
@@ -4498,7 +4605,13 @@ function toggleAtividadeC3(k){
   } else {
     stateAtividadesAtivasC3.add(k);
   }
-  aplicarAtividadeC3(k);
+  // Se "k" acabou de ser DESMARCADA (removida do set), ela não está mais ativa — aplicar ela mesmo
+  // assim faria stateAtividadeC3 apontar pra uma atividade que não está mais selecionada (ex.:
+  // desmarcar "Comércio" deixando só "Venda de lotes" ativa, mas o redutor social continuava
+  // escondido porque a "atividade principal" ainda ficava "comercio"). Usa qualquer atividade que
+  // realmente sobrou no set — a última, por convenção — em vez de sempre "k".
+  const atividadeParaAplicar = stateAtividadesAtivasC3.has(k) ? k : Array.from(stateAtividadesAtivasC3).pop();
+  aplicarAtividadeC3(atividadeParaAplicar);
 }
 
 // Marca uma atividade como a única ativa (substitui qualquer seleção anterior, inclusive a
@@ -4606,10 +4719,9 @@ function aplicarAtividadeC3(k){
   if (a.ratPct !== undefined){
     document.getElementById('ratPct_c3').value = a.ratPct;
   }
-  const defaultsRedutorSocial = { locacaoResidencial: 600, imovel: 100000, lotes: 30000 };
-  if (Object.prototype.hasOwnProperty.call(defaultsRedutorSocial, k)){
-    document.getElementById('redutorSocialValor_c3').value = defaultsRedutorSocial[k].toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-  }
+  // Os valores-padrão de redutor social (R$600 locação, R$100mil imóvel, R$30mil lote) agora são
+  // aplicados automaticamente pela renderização dinâmica do painel (window.redutorSocialValoresC3),
+  // não precisando mais setar um campo único aqui.
   // cada atividade marcada ativa automaticamente seu Anexo correspondente do Simples (pode resultar em múltiplos)
   const anexosDasAtividades = Array.from(stateAtividadesAtivasC3).map(at=>ATIVIDADE_ANEXO_PADRAO_C3[at]).filter(Boolean);
   state3.anexosAtivos = new Set(anexosDasAtividades);
@@ -4676,13 +4788,9 @@ function buildAtividadeC3Tabs(){
     const combo = document.getElementById('locacaoCombo_c3').checked;
     document.getElementById('locacaoComboFieldWrap_c3').style.display = combo ? 'block' : 'none';
   }
-  // Locação Comercial não tem redutor social (esse benefício é só pra residencial, Art. 260) — zera
-  // qualquer valor deixado nos campos de uma seleção anterior de Residencial, pra não ficar um resto
-  // "escondido" que reaparece se a pessoa voltar pra Residencial mais tarde sem ter sido essa a intenção.
-  if (ehLocacaoComercial){
-    document.getElementById('redutorSocialQtdImoveis_c3').value = '1';
-    document.getElementById('redutorSocialValor_c3').value = '0,00';
-  }
+  // Locação Comercial sozinha não tem redutor social (Art. 260 é só pra residencial) — a renderização
+  // dinâmica do painel já só mostra o bloco de "locacaoResidencial" quando ela está de fato ativa
+  // (direto ou via o combo), então não precisa mais "zerar" nada aqui manualmente.
 }
 
 function escalaDeC3(modo){ return modo==='trimestral' ? 3 : (modo==='anual' ? 12 : 1); }
@@ -5019,7 +5127,14 @@ function buildReceitasPorAnexoC3(){
     if (wrap.querySelector(`[data-anexo-wrap="${k}"]`)) return;
     const row = document.createElement('div');
     row.dataset.anexoWrap = k;
-    row.innerHTML = `<label style="margin-top:8px">Receita bruta mensal — Anexo ${k}</label>
+    // Rótulo de negócio: usa o(s) nome(s) das atividades ATIVAS que mapeiam pra esse Anexo (ex.:
+    // "Venda de lotes" pro Anexo I, "Locação residencial" pro Anexo III), em vez do genérico
+    // "Anexo I/III" — mais claro quando há mais de uma atividade ativa (ex.: locação + lotes).
+    const atividadesDesseAnexo = Array.from(stateAtividadesAtivasC3).filter(a => ATIVIDADE_ANEXO_PADRAO_C3[a] === k);
+    const rotulo = atividadesDesseAnexo.length > 0
+      ? atividadesDesseAnexo.map(a => ATIVIDADES_C3[a] ? ATIVIDADES_C3[a].nome.replace(/\s*\(\d+%\)\s*$/, '') : a).join(' + ')
+      : `Anexo ${k}`;
+    row.innerHTML = `<label style="margin-top:8px">Receita bruta mensal — ${rotulo}</label>
       <input type="text" inputmode="decimal" class="money" data-anexo="${k}" value="0,00">`;
     wrap.appendChild(row);
     row.querySelector('input').addEventListener('input', function(){ formatMoneyInput(this); calcComp3(); });
@@ -6348,30 +6463,66 @@ function calcComp3(){
 
   // ---- Redutor social: locação residencial (R$600/mês, art.260) · imóvel residencial novo (R$100mil, art.259) · lote residencial (R$30mil, art.259) ----
   const REDUTOR_SOCIAL_DEFAULTS = { locacaoResidencial: 600, imovel: 100000, lotes: 30000 };
+  // Redutor social (Art. 259/260, LC 214/2025): quando MAIS DE UMA atividade com redutor social
+  // está ativa ao mesmo tempo (ex.: "Locação residencial" + "Venda de lotes" juntas, cada uma com
+  // seu próprio redutor) — antes só existia UM painel, controlado pela "atividade principal" mais
+  // recente, então só um dos redutores aparecia e era somado, mesmo com as duas ativas. Agora gera
+  // um bloco por atividade ativa que tenha redutor social, e soma todos.
+  window.redutorSocialValoresC3 = window.redutorSocialValoresC3 || {};
+  const TEXTOS_REDUTOR_SOCIAL_C3 = {
+    locacaoResidencial: { legenda:'Redutor social — locação residencial (Art. 260)', hint:'R$600,00/mês por imóvel — só locação residencial, não comercial', qtd:'Nº de imóveis residenciais locados', valor:'Redutor por imóvel/mês (R$)', periodicidade:'/mês' },
+    imovel: { legenda:'Redutor social — imóvel residencial novo (Art. 259)', hint:'R$100.000,00 por imóvel, dedução única na primeira venda', qtd:'Nº de imóveis residenciais novos vendidos', valor:'Redutor por imóvel (R$)', periodicidade:' (dedução única na venda)' },
+    lotes:  { legenda:'Redutor social — lote residencial (Art. 259)', hint:'R$30.000,00 por lote, dedução única na venda', qtd:'Nº de lotes residenciais vendidos', valor:'Redutor por lote (R$)', periodicidade:' (dedução única na venda)' }
+  };
   // Locação Comercial + combo "também tenho locação residencial" marcado: há receita residencial
-  // ali dentro (somada em receitaTotalComLocacao), então o redutor social residencial (Art. 260)
-  // também se aplica — antes só aparecia com "Locação Residencial" como atividade PRINCIPAL, nunca
-  // quando a receita residencial entrava como complemento da Comercial via o combo.
-  const temRedutorSocialViaComboResidencial = stateAtividadeC3==='locacaoComercial' && locacaoComboAtivo;
-  const temRedutorSocial = Object.prototype.hasOwnProperty.call(REDUTOR_SOCIAL_DEFAULTS, stateAtividadeC3) || temRedutorSocialViaComboResidencial;
-  document.getElementById('redutorSocialWrap_c3').style.display = temRedutorSocial ? 'block' : 'none';
+  // ali dentro (somada em receitaTotalComLocacao), então o redutor social residencial também se
+  // aplica, mesmo "locacaoResidencial" não estando marcada como atividade própria.
+  const ativasComRedutorSocial = new Set(Array.from(stateAtividadesAtivasC3).filter(a => TEXTOS_REDUTOR_SOCIAL_C3[a]));
+  if (stateAtividadeC3==='locacaoComercial' && locacaoComboAtivo) ativasComRedutorSocial.add('locacaoResidencial');
+  const containerRedutorSocial = document.getElementById('redutorSocialContainer_c3');
   let redutorSocialTotalReais = 0;
-  if (temRedutorSocial){
-    const textos = {
-      locacaoResidencial: { legenda:'Redutor social — locação residencial (Art. 260)', hint:'R$600,00/mês por imóvel — só locação residencial, não comercial', qtd:'Nº de imóveis residenciais locados', valor:'Redutor por imóvel/mês (R$)' },
-      imovel: { legenda:'Redutor social — imóvel residencial novo (Art. 259)', hint:'R$100.000,00 por imóvel, dedução única na primeira venda', qtd:'Nº de imóveis residenciais novos vendidos', valor:'Redutor por imóvel (R$)' },
-      lotes:  { legenda:'Redutor social — lote residencial (Art. 259)', hint:'R$30.000,00 por lote, dedução única na venda', qtd:'Nº de lotes residenciais vendidos', valor:'Redutor por lote (R$)' }
-    };
-    const t = temRedutorSocialViaComboResidencial ? textos.locacaoResidencial : textos[stateAtividadeC3];
-    document.getElementById('redutorSocialLegend_c3').firstChild.textContent = t.legenda + ' ';
-    document.getElementById('redutorSocialHint_c3').textContent = t.hint;
-    document.getElementById('redutorSocialQtdLabel_c3').textContent = t.qtd;
-    document.getElementById('redutorSocialValorLabel_c3').textContent = t.valor;
-    const qtdImoveis = Math.max(0, parseFloat(document.getElementById('redutorSocialQtdImoveis_c3').value)||0);
-    const valorPorImovel = Math.max(0, getMoney('redutorSocialValor_c3'));
-    redutorSocialTotalReais = qtdImoveis * valorPorImovel;
-    const periodicidadeTxt = (stateAtividadeC3==='locacaoResidencial' || temRedutorSocialViaComboResidencial) ? '/mês' : ' (dedução única na venda)';
-    document.getElementById('redutorSocialTotal_c3').textContent = `Redutor social total: ${fmt(redutorSocialTotalReais)}${periodicidadeTxt} (limitado à base de cálculo)`;
+  if (ativasComRedutorSocial.size > 0){
+    containerRedutorSocial.innerHTML = Array.from(ativasComRedutorSocial).map(chave=>{
+      const t = TEXTOS_REDUTOR_SOCIAL_C3[chave];
+      const salvo = window.redutorSocialValoresC3[chave] || { qtd: 1, valor: chave==='locacaoResidencial' ? 600 : (chave==='lotes' ? 30000 : 100000) };
+      return `<div style="margin-top:10px; padding:10px; border:1px solid var(--line); border-radius:8px;">
+        <label style="margin-top:0">${t.legenda}
+          <span class="hint">${t.hint}</span>
+        </label>
+        <div class="row2">
+          <div>
+            <label style="margin-top:0">${t.qtd}</label>
+            <input type="number" class="redutor-qtd-c3" data-chave="${chave}" value="${salvo.qtd}" step="1" min="0">
+          </div>
+          <div>
+            <label style="margin-top:0">${t.valor}</label>
+            <input type="text" inputmode="decimal" class="money redutor-valor-c3" data-chave="${chave}" value="${salvo.valor.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}">
+          </div>
+        </div>
+        <div class="redutor-tag" data-total-chave="${chave}">—</div>
+      </div>`;
+    }).join('');
+    containerRedutorSocial.querySelectorAll('.redutor-qtd-c3, .redutor-valor-c3').forEach(el=>{
+      el.addEventListener('input', function(){
+        const chave = this.dataset.chave;
+        if (!window.redutorSocialValoresC3[chave]){
+          window.redutorSocialValoresC3[chave] = { qtd: 1, valor: chave==='locacaoResidencial' ? 600 : (chave==='lotes' ? 30000 : 100000) };
+        }
+        if (this.classList.contains('redutor-qtd-c3')) window.redutorSocialValoresC3[chave].qtd = parseFloat(this.value)||0;
+        else { formatMoneyInput(this); window.redutorSocialValoresC3[chave].valor = getMoney(this); }
+        calcComp3();
+      });
+    });
+    ativasComRedutorSocial.forEach(chave=>{
+      const t = TEXTOS_REDUTOR_SOCIAL_C3[chave];
+      const s = window.redutorSocialValoresC3[chave] || { qtd:1, valor: chave==='locacaoResidencial'?600:(chave==='lotes'?30000:100000) };
+      const totalChave = Math.max(0, s.qtd||0) * Math.max(0, s.valor||0);
+      redutorSocialTotalReais += totalChave;
+      const elTotal = containerRedutorSocial.querySelector(`[data-total-chave="${chave}"]`);
+      if (elTotal) elTotal.textContent = `Redutor social total: ${fmt(totalChave)}${t.periodicidade} (limitado à base de cálculo)`;
+    });
+  } else {
+    containerRedutorSocial.innerHTML = '';
   }
   const baseCbsIbsComRedutorSocial = Math.max(0, receitaTotalComLocacao - redutorSocialTotalReais);
 
@@ -6730,7 +6881,7 @@ function calcComp3(){
 
 document.getElementById('comprasValor_c3').addEventListener('input', function(){ this.dataset.manual = 'true'; });
 initMoneyInputs(['rbt12_c3','rba_c3','receita_c3','lucro_c3','fin_c3','folha_c3','prolabore_c3',
-  'comprasValor_c3','despesasValor_c3','pago2026_c3','receitaOutraLocacao_c3','redutorSocialValor_c3',
+  'comprasValor_c3','despesasValor_c3','pago2026_c3','receitaOutraLocacao_c3',
   'icmsCreditoReal_c3',
   'receitaTrimestral_c3','receitaSTTrimestral_c3','lucroTrimestral_c3','finTrimestral_c3',
   'trim1_c3','trim2_c3','trim3_c3','trim4_c3','lucroTrim1_c3','lucroTrim2_c3','lucroTrim3_c3','lucroTrim4_c3',
@@ -6738,8 +6889,7 @@ initMoneyInputs(['rbt12_c3','rba_c3','receita_c3','lucro_c3','fin_c3','folha_c3'
   'finTrim1_c3','finTrim2_c3','finTrim3_c3','finTrim4_c3',
   'semTrim1_c3','semTrim2_c3','semLucroTrim1_c3','semLucroTrim2_c3',
   'receitaSTSemTrim1_c3','receitaSTSemTrim2_c3','semFinTrim1_c3','semFinTrim2_c3'], calcComp3);
-['presIrpj_c3','presCsll_c3','icmsDebitoAliq_c3','icmsAliq_c3','issAliq_c3','cbsAliq_c3','ibsAliq_c3','terceirosPct_c3','ratPct_c3',
- 'redutorSocialQtdImoveis_c3'].forEach(id=>{
+['presIrpj_c3','presCsll_c3','icmsDebitoAliq_c3','icmsAliq_c3','issAliq_c3','cbsAliq_c3','ibsAliq_c3','terceirosPct_c3','ratPct_c3'].forEach(id=>{
   document.getElementById(id).addEventListener('input', calcComp3);
 });
 document.getElementById('icmsForaNormalCheckC3').addEventListener('change', calcComp3);
@@ -7555,6 +7705,7 @@ function importarSimulacao(file){
       buildAnexoTabs();
       buildAnexo3Tabs();
       buildAtividadeC3Tabs();
+      buildReceitasPorAnexoC3();
       buildPeriodos();
       buildPeriodosC3();
       if (apuracaoMensalState.pdfMeses || apuracaoMensalState.projecaoMeses){
