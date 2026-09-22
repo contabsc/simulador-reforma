@@ -338,6 +338,8 @@
   .pdf-valor-linha{display:flex;gap:6px;align-items:center;margin-bottom:5px;padding:6px 8px;background:var(--card);border:1px solid var(--line);border-radius:8px;}
   .pdf-valor-texto{font-family:'IBM Plex Mono',monospace;font-size:12px;flex:1;color:var(--ink);}
   .pdf-valor-btn{flex:none;width:auto;padding:5px 10px;font-size:11px;border:1px solid var(--teal-strong);border-radius:6px;background:var(--card);color:var(--teal-strong);cursor:pointer;font-family:'IBM Plex Sans',sans-serif;}
+  .pdf-valor-btn.btn-destaque{background:var(--teal-strong); color:#fff; font-weight:600; box-shadow:0 2px 6px rgba(0,0,0,0.15);}
+  .pdf-valor-btn.btn-destaque:hover{filter:brightness(1.1);}
   .pdf-valor-btn:hover{background:var(--teal-strong);color:#fff;}
   .imob-only, .locacao-only{display:none;}
   .checkline{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12.5px;color:var(--ink);}
@@ -553,7 +555,7 @@
         <input type="number" id="projecaoAnoUnico" value="2027" style="max-width:100px; font-size:12px; padding:6px 8px;">
         <div id="projecaoMesesLista" style="margin-top:10px;"></div>
         <button type="button" id="btnAdicionarMesProjecao" class="pdf-valor-btn" style="margin-top:8px;">+ Adicionar mês</button>
-        <button type="button" id="btnCalcularProjecao" class="pdf-valor-btn" style="margin-top:8px; margin-left:8px; display:none;">Calcular projeção</button>
+        <button type="button" id="btnCalcularProjecao" class="pdf-valor-btn btn-destaque" style="margin-top:8px; margin-left:8px; display:none;">Calcular projeção</button>
         <button type="button" id="btnLimparProjecao" class="pdf-valor-btn" style="margin-top:8px; margin-left:8px; display:none;">Limpar campos</button>
       </details>
 
@@ -613,6 +615,13 @@
           <input type="number" id="pctDasEstimadoCompras" value="2" step="1" min="0" max="100" style="max-width:120px;">
         </div>
 
+        <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--line);">
+          <label style="margin-top:0">Saldo de estoque em 31/12/2026 (R$)
+            <span class="hint">crédito de transição pra CBS/IBS (LC 214/2025): estoque × alíquota de CBS/IBS = crédito total, usado em 12 parcelas mensais iguais (1/12 por mês) a partir de janeiro/2027 — mesmo que o período calculado aqui tenha menos (ou mais) de 12 meses, a divisão é sempre por 12.</span>
+          </label>
+          <input type="text" inputmode="decimal" class="money" id="estoqueValor" value="0,00">
+        </div>
+
         <div style="margin-top:16px; padding:16px; border-radius:10px; background:var(--card); border:1px solid var(--line);">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
             <span style="font-size:15px;">📄</span>
@@ -648,7 +657,7 @@
         <div class="row2">
           <div>
             <label style="margin-top:8px">Alíquota ICMS/ISS normal (%)</label>
-            <input type="number" id="icmsForaNormalAliq" value="18" step="0.1">
+            <input type="number" id="icmsForaNormalAliq" value="17" step="0.1">
           </div>
           <div>
             <label style="margin-top:8px">Compras/insumos c/ crédito (fora do DAS)</label>
@@ -731,6 +740,7 @@
           <div class="line"><span>DAS reduzido (sem ICMS/ISS/PIS/COFINS)</span><span id="b_das">—</span></div>
           <div class="line"><span>Débito CBS/IBS sobre a venda</span><span id="b_debito">—</span></div>
           <div class="line"><span>(–) Crédito CBS/IBS sobre compras</span><span id="b_credito">—</span></div>
+          <div class="line" id="b_credito_estoque_row" style="display:none; font-size:12px;"><span>(–) Crédito de estoque — transição (1/12 do saldo em 31/12/2026)</span><span id="b_credito_estoque">—</span></div>
           <div class="line total"><span>Total a recolher</span><span id="b_total">—</span></div>
           <span class="badge credit" id="b_badge">crédito pleno repassado ao cliente</span>
         </div>
@@ -1153,11 +1163,11 @@
         <div class="row2">
           <div>
             <label style="margin-top:0">Alíquota ICMS — Débito (%)</label>
-            <input type="number" id="icmsDebitoAliq_c3" value="18" step="0.1">
+            <input type="number" id="icmsDebitoAliq_c3" value="17" step="0.1">
           </div>
           <div>
             <label style="margin-top:0">Alíquota ICMS — Crédito (%)</label>
-            <input type="number" id="icmsAliq_c3" value="18" step="0.1">
+            <input type="number" id="icmsAliq_c3" value="12" step="0.1">
           </div>
         </div>
         <span class="hint">Débito incide sobre a receita; crédito incide sobre as compras — use alíquotas diferentes se vendas e compras tiverem estados/produtos diferentes.</span>
@@ -1281,6 +1291,13 @@
           <input type="number" id="pctDasEstimadoCompras_c3" value="2" step="1" min="0" max="100" style="max-width:120px;">
         </div>
 
+        <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--line);">
+          <label style="margin-top:0">Saldo de estoque em 31/12/2026 (R$)
+            <span class="hint">crédito de transição pra CBS/IBS (LC 214/2025): estoque × alíquota de CBS/IBS = crédito total, usado em 12 parcelas mensais iguais (1/12 por mês) a partir de janeiro/2027 — mesmo que o período calculado aqui tenha menos (ou mais) de 12 meses, a divisão é sempre por 12.</span>
+          </label>
+          <input type="text" inputmode="decimal" class="money" id="estoqueValor_c3" value="0,00">
+        </div>
+
         <div style="margin-top:16px; padding:16px; border-radius:10px; background:var(--card); border:1px solid var(--line);">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
             <span style="font-size:15px;">📄</span>
@@ -1373,6 +1390,7 @@
           <div class="line"><span>DAS reduzido (sem ICMS/ISS/PIS/COFINS)</span><span id="c3_hib_das">—</span></div>
           <div class="line"><span>Débito CBS/IBS sobre a venda</span><span id="c3_hib_debito">—</span></div>
           <div class="line"><span>(–) Crédito CBS/IBS sobre compras/despesas</span><span id="c3_hib_credito_compras">—</span></div>
+          <div class="line" id="c3_hib_credito_estoque_row" style="display:none; font-size:12px;"><span>(–) Crédito de estoque — transição (1/12 do saldo em 31/12/2026)</span><span id="c3_hib_credito_estoque">—</span></div>
           <div class="line total"><span>Total a recolher</span><span id="c3_hib_total">—</span></div>
           <span class="badge credit">crédito pleno repassado ao cliente</span>
           <div class="line" id="c3_hib_credito_row" style="display:none"><span>↳ crédito repassado ao comprador</span><span id="c3_hib_credito">—</span></div>
@@ -1796,7 +1814,7 @@ const CNAE_LIST = [
 // Número da versão atual do app — atualizar aqui a cada nova versão publicada. Usado tanto no rótulo
 // visível na tela (pra conferir se o que está no ar bate com o que foi publicado no Git) quanto no
 // arquivo de backup exportado (campo "versaoApp"), sem precisar mudar em dois lugares separados.
-const VERSAO_APP = 'v334';
+const VERSAO_APP = 'v343';
 document.getElementById('versaoAppLabel').textContent = '· ' + VERSAO_APP;
 
 const ANEXOS = {
@@ -2917,6 +2935,9 @@ function calcularProjecaoC3(){
     document.getElementById('lucroManualCheck_c3').checked = true;
     document.getElementById('lucroManualWrap_c3').style.display = 'block';
   }
+  if (Math.max(0, getMoney('rbt12_c3')) <= 0){
+    perguntarDataInicioECalcularRBT12(meses, 'rbt12_c3');
+  }
   preencherTodasPeriodicidadesC3(combinarPdfEProjecaoC3());
 }
 
@@ -2936,6 +2957,55 @@ function ordenarLinhaDoTempoPT(meses){
   });
 }
 const ORDEM_MESES_PT = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+
+// Empresa em início de atividade (menos de 12 meses de existência) ainda não tem um RBT12 "de
+// verdade" — a LC 123/2006, Art. 3º §2º, manda usar a MÉDIA mensal da receita já apurada desde a
+// abertura, multiplicada por 12, como RBT12 proporcional (é a única forma de achar a faixa/alíquota
+// sem 12 meses de histórico real). Pergunta a data de abertura, conta quantos meses já se passaram
+// até o mês mais recente informado na projeção, e usa isso como divisor — mesmo que a pessoa só
+// tenha digitado 2 ou 3 meses, o divisor é "meses desde a abertura", não "meses digitados": se abriu
+// há 5 meses mas só digitou receita de 2 deles, a média some os 2 e divide por 5, não por 2.
+function valorTotalMes(m){
+  if (m.porAnexo) return Object.values(m.porAnexo).reduce((s,v)=>s+paraNumeroBR(v),0);
+  return paraNumeroBR(m.valor||0);
+}
+function perguntarDataInicioECalcularRBT12(meses, rbt12FieldId){
+  if (!meses || meses.length === 0) return false;
+  const dataInicioTexto = window.prompt('Não há RBT12 informado — a empresa está em início de atividade?\n\nSe sim, informe a data de abertura (MM/AAAA) que o sistema calcula o RBT12 proporcional (média da receita já apurada × 12, conforme Art. 3º §2º da LC 123/2006).\n\nSe a empresa já tem mais de 12 meses de atividade e você só esqueceu de preencher o RBT12, cancele esta caixa e preencha o campo RBT12 diretamente.', '');
+  if (!dataInicioTexto) return false;
+  const m = dataInicioTexto.trim().match(/^(\d{1,2})\/(\d{4})$/);
+  if (!m){
+    alert('Data inválida — use o formato MM/AAAA (ex.: 03/2026). RBT12 não foi calculado; preencha manualmente ou tente de novo.');
+    return false;
+  }
+  const mesInicioIdx = parseInt(m[1],10) - 1;
+  const anoInicio = parseInt(m[2],10);
+  if (mesInicioIdx < 0 || mesInicioIdx > 11){
+    alert('Mês inválido — use 01 a 12. RBT12 não foi calculado; preencha manualmente ou tente de novo.');
+    return false;
+  }
+  // acha o mês mais recente entre os informados, pra contar até ele (não até hoje)
+  let maisRecente = null;
+  meses.forEach(mm=>{
+    const idx = ORDEM_MESES_PT.indexOf(mm.mes);
+    const chave = parseInt(mm.ano,10)*12 + idx;
+    if (!maisRecente || chave > maisRecente.chave) maisRecente = { chave, ano: parseInt(mm.ano,10), idx };
+  });
+  if (!maisRecente) return false;
+  const mesesDeAtividade = maisRecente.chave - (anoInicio*12 + mesInicioIdx) + 1;
+  if (mesesDeAtividade <= 0){
+    alert('A data de abertura informada é posterior aos meses de receita digitados — confira e tente de novo.');
+    return false;
+  }
+  const somaReceita = meses.reduce((s,mm)=>s+valorTotalMes(mm), 0);
+  const mediaMensal = somaReceita / mesesDeAtividade;
+  const rbt12Proporcional = mediaMensal * 12;
+  const campo = document.getElementById(rbt12FieldId);
+  campo.value = rbt12Proporcional.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  campo.dispatchEvent(new Event('input'));
+  alert(`RBT12 proporcional calculado: ${rbt12Proporcional.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}\n\n(receita de ${mesesDeAtividade} ${mesesDeAtividade===1?'mês':'meses'} de atividade, média mensal × 12 — LC 123/2006, Art. 3º §2º)`);
+  return true;
+}
 
 function calcularDASParaAnexoNoMes(anexoKey, receita, rbtSafeMes, receitaSTAnexo){
   const anexoObj = ANEXOS[anexoKey];
@@ -2999,15 +3069,18 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
   const pctCreditoComprasAtual = (parseFloat(document.getElementById('pctCreditoCompras').value)||0)/100;
   const despesasGeraisAtual = Math.max(0, getMoney('despesasGerais'));
   const pctCreditoDespesasAtual = (parseFloat(document.getElementById('pctCreditoDespesas').value)||0)/100;
-  // Base de crédito pro Híbrido: soma a parte "% Presumido/Real" (crédito cheio) com a parte
-  // "% Simples" (crédito reduzido pelo "% estimado de CBS/IBS de compras de empresas Simples
-  // Nacional") — sem isso, compras/despesas 100% Simples não geravam NENHUM crédito no Híbrido.
+  // Base de crédito pro Híbrido tem DOIS componentes, com fórmulas DIFERENTES (não podem ser somados
+  // antes de multiplicar pela alíquota — cada um usa uma alíquota diferente):
+  // 1) Compras de fornecedores do Real/Presumido: crédito PLENO, mesma alíquota de CBS/IBS.
+  // 2) Compras de fornecedores do Simples Nacional: crédito PRESUMIDO pelo "% do DAS estimado" — que
+  //    já é o valor final do crédito, não deve ser multiplicado pela alíquota de CBS/IBS de novo
+  //    (fazer isso reduzia esse crédito a quase zero — ex.: 100mil×10%×2% deveria dar R$200 fixos,
+  //    não R$200×9,21%=R$18,42).
   const pctSimplesComprasParaHibrido = (parseFloat(document.getElementById('pctCreditoSimplesCompras').value)||0)/100;
   const pctSimplesDespesasParaHibrido = (parseFloat(document.getElementById('pctCreditoSimplesDespesas').value)||0)/100;
   const pctDasEstimadoParaHibrido = (parseFloat(document.getElementById('pctDasEstimadoCompras').value)||0)/100;
-  const creditoBaseAtual = comprasAtual*pctCreditoComprasAtual + despesasGeraisAtual*pctCreditoDespesasAtual
-    + comprasAtual*pctSimplesComprasParaHibrido*pctDasEstimadoParaHibrido
-    + despesasGeraisAtual*pctSimplesDespesasParaHibrido*pctDasEstimadoParaHibrido;
+  const creditoBaseAtual = comprasAtual*pctCreditoComprasAtual + despesasGeraisAtual*pctCreditoDespesasAtual;
+  const creditoComprasFornecedorSimplesParaHibrido = (comprasAtual*pctSimplesComprasParaHibrido + despesasGeraisAtual*pctSimplesDespesasParaHibrido) * pctDasEstimadoParaHibrido;
   const cbsRateAtual = parseFloat(document.getElementById('cbsRate').value)||0;
   const ibsRateAtual = parseFloat(document.getElementById('ibsRate').value)||0;
   const anexoAtual = ANEXOS[state.anexo];
@@ -3116,7 +3189,7 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
     }
     const dasReduzido = totalAMes - parteSubstituida;
     const debitoCbsIbs = receitaMes * ((cbsRateAtual+ibsRateAtual)/100);
-    const creditoCompras = creditoBaseAtual * ((cbsRateAtual+ibsRateAtual)/100);
+    const creditoCompras = creditoBaseAtual * ((cbsRateAtual+ibsRateAtual)/100) + creditoComprasFornecedorSimplesParaHibrido;
     const liquidoCbsIbs = Math.max(0, debitoCbsIbs - creditoCompras);
     const hibridoMes = dasReduzido + liquidoCbsIbs;
     return { mes: mes.mes, ano: mes.ano, receitaMes, rbt12Mes: rbt12DoMes, faixaMes: faixaLabel, aliqMes: aliqLabel!==undefined?aliqLabel:ultimaAliq,
@@ -3181,22 +3254,34 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
   const creditoRepassadoDASTabela = totalCreditoACbs + totalCreditoAIbs;
   const comprasParaCredito = Math.max(0, getMoney('compras'));
   const despesasParaCredito = Math.max(0, getMoney('despesasGerais'));
+  const pctRPComprasTabela = (parseFloat(document.getElementById('pctCreditoCompras').value)||0)/100;
+  const pctRPDespesasTabela = (parseFloat(document.getElementById('pctCreditoDespesas').value)||0)/100;
   const pctSimplesComprasTabela = (parseFloat(document.getElementById('pctCreditoSimplesCompras').value)||0)/100;
   const pctSimplesDespesasTabela = (parseFloat(document.getElementById('pctCreditoSimplesDespesas').value)||0)/100;
   const pctDasEstimadoTabela = (parseFloat(document.getElementById('pctDasEstimadoCompras').value)||0)/100;
+  const cbsRateTabela = (parseFloat(document.getElementById('cbsRate').value)||0)/100;
+  const ibsRateTabela = (parseFloat(document.getElementById('ibsRate').value)||0)/100;
   const baseSimplesTabela = comprasParaCredito*pctSimplesComprasTabela + despesasParaCredito*pctSimplesDespesasTabela;
   // Crédito nas COMPRAS de fornecedores do Simples Nacional (mecanismo diferente do de cima): usa o
   // "% do DAS estimado" (padrão 2%, editável) sobre a base de compras/despesas informada na tela.
   const creditoComprasFornecedorSimplesTabela = baseSimplesTabela * pctDasEstimadoTabela;
+  // CBS/IBS não recuperável no DAS: é o MESMO valor que seria recuperado se a empresa estivesse no
+  // Híbrido (compras de fornecedores Real/Presumido × alíquota cheia de CBS/IBS + compras de
+  // fornecedores do Simples × "% do DAS estimado") — no DAS puro, esse valor fica embutido no preço
+  // pago aos fornecedores sem nunca virar crédito, então é exatamente o "custo" de ficar no DAS.
+  // Antes considerava só a parte de fornecedores do Simples, ignorando a parte (normalmente maior) de
+  // fornecedores do Real/Presumido, que também não gera crédito nenhum dentro do DAS.
+  const custoOcultoTabela = (comprasParaCredito*pctRPComprasTabela + despesasParaCredito*pctRPDespesasTabela) * (cbsRateTabela+ibsRateTabela)
+    + creditoComprasFornecedorSimplesTabela;
   if (creditoRepassadoDASTabela > 0.5){
     html += `<div class="line" style="display:flex; justify-content:space-between; font-size:13.5px; padding:7px 0; border-bottom:1px dashed var(--line);"><span>↳ crédito repassado ao comprador (PIS/COFINS/ICMS-ISS embutidos no DAS)</span><span>${fmt(creditoRepassadoDASTabela)}</span></div>`;
   }
   if (creditoComprasFornecedorSimplesTabela > 0.5){
     html += `<div class="line" style="display:flex; justify-content:space-between; font-size:12px; padding:7px 0; border-bottom:1px dashed var(--line);"><span>↳ crédito nas compras de fornecedores do Simples (${pct(pctDasEstimadoTabela*100)} s/ compras+despesas)</span><span>${fmt(creditoComprasFornecedorSimplesTabela)}</span></div>`;
   }
-  if (baseSimplesTabela > 0.5){
-    html += `<div class="line" style="display:flex; justify-content:space-between; font-size:12px; padding:7px 0; border-bottom:1px dashed var(--line); opacity:.75;"><span>↳ CBS/IBS não recuperável no DAS (compras/despesas)</span><span>${fmt(baseSimplesTabela)}</span></div>
-    <div class="line total" style="display:flex; justify-content:space-between; padding:7px 0; border-top:2px solid var(--ink); margin-top:6px; padding-top:8px;"><span>Total DAS + CBS/IBS não recuperável</span><span>${fmt(totalDAS + baseSimplesTabela)}</span></div>`;
+  if (custoOcultoTabela > 0.5){
+    html += `<div class="line" style="display:flex; justify-content:space-between; font-size:12px; padding:7px 0; border-bottom:1px dashed var(--line); opacity:.75;"><span>↳ CBS/IBS não recuperável no DAS (compras/despesas)</span><span>${fmt(custoOcultoTabela)}</span></div>
+    <div class="line total" style="display:flex; justify-content:space-between; padding:7px 0; border-top:2px solid var(--ink); margin-top:6px; padding-top:8px;"><span>Total DAS + CBS/IBS não recuperável</span><span>${fmt(totalDAS + custoOcultoTabela)}</span></div>`;
   }
   html += temMesesBaseReais
     ? `<span class="hint" style="display:block; margin-top:8px;">RBT12 <b>exato</b> de cada mês — calculado com os valores reais dos 12 meses anteriores (importados no passo 1) somados aos meses deste período.</span>`
@@ -3407,6 +3492,9 @@ function calcularProjecao(){
   });
   apuracaoMensalState.projecaoMeses = meses;
   apuracaoMensalState.projecaoST = mesesST.length > 0 ? mesesST : null;
+  if (Math.max(0, getMoney('rbt12')) <= 0){
+    perguntarDataInicioECalcularRBT12(meses, 'rbt12');
+  }
   recalcularApuracaoCombinada();
 }
 
@@ -3819,9 +3907,25 @@ function calc(){
   // Cenário B — híbrido, CBS/IBS fora do DAS
   const dasReduzido = totalA - parteSubstituida;
   const debitoCbsIbs = fatMesTotal * ((cbsRate + ibsRate)/100);
+  // Crédito de CBS/IBS nas compras tem DOIS componentes, com fórmulas DIFERENTES (não podem ser
+  // ambos multiplicados pela alíquota de CBS/IBS):
+  // 1) Compras de fornecedores do Real/Presumido: (compras × % Real/Presumido) × alíquota CBS/IBS —
+  //    ex.: 100mil × 90% × 9,21% = R$8.289,00 (crédito pleno, igual a qualquer compra normal fora
+  //    do Simples).
+  // 2) Compras de fornecedores do Simples Nacional (creditoComprasFornecedorSimplesAtual, já
+  //    calculado acima): (compras × % Simples) × "% do DAS estimado" — SEM multiplicar pela alíquota
+  //    de CBS/IBS de novo, porque o "% do DAS estimado" JÁ é o valor final do crédito presumido
+  //    (ex.: 100mil × 10% × 2% = R$200,00) — antes a fórmula multiplicava pela alíquota CBS/IBS uma
+  //    segunda vez, reduzindo esse crédito a quase zero (R$18,42 em vez de R$200,00).
   const creditoCompras = ((compras*pctCreditoCompras + despesasGerais*pctCreditoDespesas) * ((cbsRate + ibsRate)/100))
-    + ((compras*pctSimplesComprasAtual*pctDasEstimadoAtual + despesasGerais*pctSimplesDespesasAtual*pctDasEstimadoAtual) * ((cbsRate + ibsRate)/100));
-  const liquidoCbsIbs = Math.max(0, debitoCbsIbs - creditoCompras);
+    + creditoComprasFornecedorSimplesAtual;
+  // Crédito de transição do estoque (LC 214/2025): estoque em 31/12/2026 × alíquota de CBS/IBS =
+  // crédito TOTAL, usado em 12 parcelas mensais iguais — SEMPRE dividido por 12, mesmo que o período
+  // calculado aqui tenha menos ou mais meses (ex.: calculando 7 meses, ainda assim é total÷12, não
+  // total÷7 — o crédito é fixo por mês corrido, não redistribuído pelo período em tela).
+  const estoqueValorAtual = Math.max(0, getMoney('estoqueValor'));
+  const creditoEstoqueMensal = (estoqueValorAtual * (cbsRate + ibsRate)/100) / 12;
+  const liquidoCbsIbs = Math.max(0, debitoCbsIbs - creditoCompras - creditoEstoqueMensal);
   const totalB = dasReduzido + liquidoCbsIbs;
   const creditoB = debitoCbsIbs; // repasse pleno ao cliente, base é o débito destacado
 
@@ -3833,17 +3937,22 @@ function calc(){
   document.getElementById('a_credito_compras_row').style.display = creditoComprasFornecedorSimplesAtual > 0.5 ? 'flex' : 'none';
   document.getElementById('a_credito_compras').textContent = fmt(creditoComprasFornecedorSimplesAtual);
   document.getElementById('a_total').textContent = fmt(totalA);
-  // CBS/IBS não recuperável (mesma base do crédito do Híbrido) — no DAS puro, esse valor fica
-  // embutido no preço pago aos fornecedores, sem virar crédito, aumentando o custo real de aquisição.
+  // CBS/IBS não recuperável: é o MESMO valor que seria recuperado no Híbrido (creditoCompras, já
+  // calculado acima — Real/Presumido pela alíquota cheia + Simples pelo "% do DAS estimado") — no
+  // DAS puro, esse valor fica embutido no preço pago aos fornecedores sem nunca virar crédito, então
+  // é exatamente o "custo" de ficar no DAS. Antes considerava só a parte de fornecedores do Simples
+  // (baseSimplesAtual), ignorando a parte — normalmente maior — de fornecedores do Real/Presumido.
   // Informativo: não entra no "Total a recolher", só no totalizador "DAS + custo" logo abaixo dele.
-  document.getElementById('a_custo_oculto_row').style.display = baseSimplesAtual > 0.5 ? 'flex' : 'none';
-  document.getElementById('a_custo_oculto').textContent = fmt(baseSimplesAtual);
-  document.getElementById('a_total_com_custo_row').style.display = baseSimplesAtual > 0.5 ? 'flex' : 'none';
-  document.getElementById('a_total_com_custo').textContent = fmt(totalA + baseSimplesAtual);
+  document.getElementById('a_custo_oculto_row').style.display = creditoCompras > 0.5 ? 'flex' : 'none';
+  document.getElementById('a_custo_oculto').textContent = fmt(creditoCompras);
+  document.getElementById('a_total_com_custo_row').style.display = creditoCompras > 0.5 ? 'flex' : 'none';
+  document.getElementById('a_total_com_custo').textContent = fmt(totalA + creditoCompras);
 
   document.getElementById('b_das').textContent = fmt(dasReduzido);
   document.getElementById('b_debito').textContent = fmt(debitoCbsIbs);
   document.getElementById('b_credito').textContent = '– ' + fmt(creditoCompras);
+  document.getElementById('b_credito_estoque_row').style.display = creditoEstoqueMensal > 0.5 ? 'flex' : 'none';
+  document.getElementById('b_credito_estoque').textContent = '– ' + fmt(creditoEstoqueMensal);
   document.getElementById('b_total').textContent = fmt(totalB);
 
   const maxBar = Math.max(totalA, totalB, creditoRepassadoDASAtual, creditoB, 1);
@@ -3881,7 +3990,7 @@ function calc(){
 ['pctIbs','pctCbs','cbsRate','ibsRate'].forEach(id=>{
   document.getElementById(id).addEventListener('input', calc);
 });
-initMoneyInputs(['rbt12','rba','fatMes','compras','despesasGerais','receitaST','icmsForaNormalCompras'], calc);
+initMoneyInputs(['rbt12','rba','fatMes','compras','despesasGerais','receitaST','icmsForaNormalCompras','estoqueValor'], calc);
 document.getElementById('icmsForaNormalCheck').addEventListener('change', calc);
 document.getElementById('icmsForaNormalAliq').addEventListener('input', calc);
 
@@ -4654,6 +4763,33 @@ function importarDadosDaAba2ParaAba1(){
   alert('Dados importados da Aba 2 (Comparativo) com sucesso.');
 }
 
+// Copia Compras/Despesas, seus percentuais de crédito e as alíquotas CBS/IBS da Aba 1 pra Aba 2 —
+// reaproveitada tanto pelo botão "Importar dados da Aba 1" quanto, automaticamente, ao carregar um
+// backup salvo antes dessa correção existir (só quando a Aba 2 estiver vazia nesses campos, pra
+// nunca sobrescrever um ajuste que a pessoa já tenha feito lá).
+function sincronizarComprasDespesasAba1ParaAba2(forcar){
+  const camposCopiarDireto = [
+    ['compras','comprasValor_c3'], ['despesasGerais','despesasValor_c3'],
+    ['pctCreditoCompras','pctCreditoRPCompras_c3'], ['pctCreditoSimplesCompras','pctCreditoSimplesCompras_c3'],
+    ['pctCreditoDespesas','pctCreditoRPDespesas_c3'], ['pctCreditoSimplesDespesas','pctCreditoSimplesDespesas_c3'],
+    ['pctDasEstimadoCompras','pctDasEstimadoCompras_c3']
+  ];
+  const aba2VaziaNessesCampos = getMoney('comprasValor_c3') <= 0 && getMoney('despesasValor_c3') <= 0;
+  if (!forcar && !aba2VaziaNessesCampos) return; // não sobrescreve ajuste já feito na Aba 2
+  camposCopiarDireto.forEach(([origemId, destinoId])=>{
+    const origemEl = document.getElementById(origemId);
+    const destinoEl = document.getElementById(destinoId);
+    if (!origemEl || !destinoEl) return;
+    destinoEl.value = origemEl.value;
+  });
+  const cbsRateVal = parseFloat(document.getElementById('cbsRate').value)||0;
+  const ibsRateVal = parseFloat(document.getElementById('ibsRate').value)||0;
+  const cbsAtualC3 = parseFloat(document.getElementById('cbsAliq_c3').value)||0;
+  const ibsAtualC3 = parseFloat(document.getElementById('ibsAliq_c3').value)||0;
+  if (cbsRateVal > 0 && (forcar || cbsAtualC3 <= 0)) document.getElementById('cbsAliq_c3').value = document.getElementById('cbsRate').value;
+  if (ibsRateVal > 0 && (forcar || ibsAtualC3 <= 0)) document.getElementById('ibsAliq_c3').value = document.getElementById('ibsRate').value;
+}
+
 function importarDadosDaAba1ParaAba2(){
   // Cliente e identificação
   const nomeVal = document.getElementById('clienteNome')?.value.trim();
@@ -4682,16 +4818,34 @@ function importarDadosDaAba1ParaAba2(){
     }
   }
 
-  // Receita mensal importada (PDF ou projeção)
+  // Receita mensal importada (PDF) — soma o multiAnexo pra manter a quebra por Anexo quando há mais
+  // de um ativo (senão a soma total bate, mas perde a divisão entre os Anexos ao chegar na Aba 2).
   if (apuracaoMensalState.pdfMeses && apuracaoMensalState.pdfMeses.length > 0){
     apuracaoMensalStateC3.pdfMeses = JSON.parse(JSON.stringify(apuracaoMensalState.pdfMeses));
     Object.keys(multiAnexoImportC3).forEach(k=>delete multiAnexoImportC3[k]);
     Object.assign(multiAnexoImportC3, JSON.parse(JSON.stringify(multiAnexoImportC1)));
+  }
+  // Receita digitada manualmente na "Projeção mensal" (sem PDF nenhum) — faltava aqui: o comentário
+  // desse bloco já dizia "PDF ou projeção", mas o código só copiava pdfMeses, nunca projecaoMeses.
+  // Quem digitava a receita à mão na Aba 1 e clicava em "Importar da Aba 1" via a Aba 2 continuar sem
+  // nenhuma receita — nem Simples DAS/Híbrido, nem o resto, tinham como calcular.
+  if (apuracaoMensalState.projecaoMeses && apuracaoMensalState.projecaoMeses.length > 0){
+    apuracaoMensalStateC3.projecaoMeses = JSON.parse(JSON.stringify(apuracaoMensalState.projecaoMeses));
+    apuracaoMensalStateC3.projecaoST = apuracaoMensalState.projecaoST ? JSON.parse(JSON.stringify(apuracaoMensalState.projecaoST)) : null;
+  }
+  if ((apuracaoMensalState.pdfMeses && apuracaoMensalState.pdfMeses.length > 0) || (apuracaoMensalState.projecaoMeses && apuracaoMensalState.projecaoMeses.length > 0)){
     preencherTodasPeriodicidadesC3(combinarPdfEProjecaoC3());
   }
   // RBA é atribuído POR ÚLTIMO — preencherTodasPeriodicidadesC3() acima sempre recalcula RBA a partir
   // da receita importada, o que sobrescreveria o valor da Aba 1 se essa atribuição viesse antes.
   if (rbaVal > 0) document.getElementById('rba_c3').value = rbaVal.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  // Compras/Despesas e seus percentuais de crédito — faltavam aqui, então o "CBS/IBS não recuperável"
+  // e os créditos do Híbrido nunca batiam entre as abas: quem preenchia só na Aba 1 e clicava em
+  // "Importar da Aba 1" via a receita chegar corretamente, mas Compras/Despesas ficavam zerados na
+  // Aba 2 até serem digitados ali de novo, manualmente. "forcar=true" aqui porque o clique no botão é
+  // um pedido explícito de trazer os dados da Aba 1, mesmo que a Aba 2 já tenha algo preenchido.
+  sincronizarComprasDespesasAba1ParaAba2(true);
 
   calcComp3();
   alert('Dados importados da Aba 1 (Simples) com sucesso.');
@@ -5208,160 +5362,67 @@ function calcularDetalhadoTrimestreEspecificoC3(receitaQ, receitaSTQ, lucroQ, fi
 }
 
 function calcularPresumidoRealPorTrimestreC3(mesesOrdenados){
-  // CBS/IBS líquido (débito − crédito de compras/despesas, com redutor da atividade) — extraído numa
-  // função à parte pra usar exatamente a MESMA fórmula do card único (calcComp3), em vez de uma conta
-  // simplificada só com o débito bruto (que dava um total bem maior que o real, sem descontar o
-  // crédito configurado em "Compras/despesas e créditos de CBS/IBS").
-  function calcularCbsIbsLiquidoC3(receitaBaseTrimestre, temIcmsLocal, temIssLocal, numMesesGrupo){
-    // "compras"/"despesas" são sempre tratados como valor de 1 MÊS aqui — Mensal e Anual chamam essa
-    // MESMA função com os MESMOS meses reais importados, então a interpretação da escala não pode
-    // depender de qual aba está ativa (statePeriodicidadeC3) — só do número real de meses de CADA
-    // grupo/trimestre-calendário (numMesesGrupo), que é o que realmente varia entre os grupos.
-    const comprasMensalEquiv = Math.max(0, getMoney('comprasValor_c3'));
-    const despesasMensalEquiv = Math.max(0, getMoney('despesasValor_c3'));
-    const nMeses = numMesesGrupo || 1;
-    const comprasUnicoLocal = comprasMensalEquiv; // mantém mensal-equivalente — receita abaixo também fica mensal-equivalente
-    const despesasUnicoLocal = despesasMensalEquiv;
-    const pctCreditoRPComprasLocal = parseFloat(document.getElementById('pctCreditoRPCompras_c3').value)||0;
-    const pctCreditoRPDespesasLocal = parseFloat(document.getElementById('pctCreditoRPDespesas_c3').value)||0;
-    const pctCreditoSimplesComprasLocal = parseFloat(document.getElementById('pctCreditoSimplesCompras_c3').value)||0;
-    const pctCreditoSimplesDespesasLocal = parseFloat(document.getElementById('pctCreditoSimplesDespesas_c3').value)||0;
-    const pctDasEstLocal = parseFloat(document.getElementById('pctDasEstimadoCompras_c3').value)||0;
-    const creditoComprasRPLocal = comprasUnicoLocal*(pctCreditoRPComprasLocal/100);
-    const creditoDespesasRPLocal = despesasUnicoLocal*(pctCreditoRPDespesasLocal/100);
-    const creditoComprasCbsIbsRPLocal = creditoComprasRPLocal + comprasUnicoLocal*(pctCreditoSimplesComprasLocal/100)*(pctDasEstLocal/100);
-    const creditoDespesasCbsIbsRPLocal = creditoDespesasRPLocal + despesasUnicoLocal*(pctCreditoSimplesDespesasLocal/100)*(pctDasEstLocal/100);
-    const redutorAtividadeLocal = ATIVIDADES_C3[stateAtividadeC3].redutor;
-    const fatorRedutorLocal = 1 - (redutorAtividadeLocal/100);
-    const cbsAliqLocal = parseFloat(document.getElementById('cbsAliq_c3').value)/100 || 0;
-    const ibsAliqLocal = parseFloat(document.getElementById('ibsAliq_c3').value)/100 || 0;
-    // Receita mensal-equivalente pra bater com compras/despesas (também mensal-equivalente acima) —
-    // usa nMeses (quantos meses REAIS esse grupo/trimestre-calendário tem), não a escala do modo.
-    const receitaMensalEquiv = receitaBaseTrimestre / nMeses;
-    const cbsDebitoLocal = receitaMensalEquiv * cbsAliqLocal * fatorRedutorLocal;
-    const cbsCreditoLocal = (creditoComprasCbsIbsRPLocal + creditoDespesasCbsIbsRPLocal) * cbsAliqLocal * fatorRedutorLocal;
-    const cbsLiquidoLocal = Math.max(0, cbsDebitoLocal - cbsCreditoLocal) * nMeses;
-    let ibsLiquidoLocal = 0;
-    if (!temIcmsLocal && !temIssLocal){
-      const ibsDebitoLocal = receitaMensalEquiv * ibsAliqLocal * fatorRedutorLocal;
-      const ibsCreditoLocal = (creditoComprasCbsIbsRPLocal + creditoDespesasCbsIbsRPLocal) * ibsAliqLocal * fatorRedutorLocal;
-      ibsLiquidoLocal = Math.max(0, ibsDebitoLocal - ibsCreditoLocal) * nMeses;
-    }
-    return { cbs: cbsLiquidoLocal, ibs: ibsLiquidoLocal };
-  }
+  // Reaproveita EXATAMENTE a mesma função "oficial" que a visão detalhada (lado a lado) já usa —
+  // calcularDetalhadoTrimestreEspecificoC3, que por sua vez chama calcComp3() de verdade — em vez de
+  // uma implementação separada e duplicada (como era antes). A duplicata tinha sua própria fórmula
+  // de ICMS/CBS/IBS/INSS, que divergia da oficial sempre que havia meses de prejuízo misturados com
+  // meses de lucro no mesmo trimestre-calendário: a visão "Ver mês a mês" e a visão detalhada
+  // mostravam totais diferentes pro mesmo período, mesmo que ambas dissessem calcular a mesma coisa.
   const trimestreDoMesCalendario = mesNome => Math.floor(ORDEM_MESES_PT.indexOf(mesNome)/3) + 1;
-  const presuncaoPonderadaMensal = calcularPresuncaoPonderadaC3();
-  const presIrpjPct = presuncaoPonderadaMensal ? presuncaoPonderadaMensal.irpj : (parseFloat(document.getElementById('presIrpj_c3').value) || 0);
-  const presCsllPct = presuncaoPonderadaMensal ? presuncaoPonderadaMensal.csll : (parseFloat(document.getElementById('presCsll_c3').value) || 0);
-  const temIcms = document.getElementById('temIcms_c3').checked;
-  const temIss = document.getElementById('temIss_c3').checked;
-  const icmsDebitoAliq = parseFloat(document.getElementById('icmsDebitoAliq_c3').value)/100 || 0;
-  const issAliq = parseFloat(document.getElementById('issAliq_c3').value)/100 || 0;
-  const cbsAliq = parseFloat(document.getElementById('cbsAliq_c3').value)/100 || 0;
-  const ibsAliq = parseFloat(document.getElementById('ibsAliq_c3').value)/100 || 0;
-  const terceirosPct = parseFloat(document.getElementById('terceirosPct_c3').value)/100 || 0;
-  // ICMS/ISS informados mês a mês (Deseja informar o valor do ICMS Devido/percentual ISS mensal?) —
-  // quando ativo, substitui inteiramente o cálculo por alíquota fixa, mês por mês.
-  const icmsManualAtivo = temIcms && document.getElementById('icmsManualCheck_c3').checked;
-  const issManualAtivo = temIss && document.getElementById('issManualCheck_c3').checked;
+  const icmsManualAtivoLocal = document.getElementById('icmsManualCheck_c3').checked;
+  const issManualAtivoLocal = document.getElementById('issManualCheck_c3').checked;
+  const lucroManualAtivoLocal = document.getElementById('lucroManualCheck_c3').checked;
+  const ANEXO_TIPO_C3_LOCAL = { I:'comercio', II:'comercio', III:'servico', IV:'servico', V:'servico' };
+  const isComercioAtualC3Local = ATIVIDADES_C3[stateAtividadeC3] && ATIVIDADES_C3[stateAtividadeC3].tributo === 'icms';
 
   const grupos = {};
   mesesOrdenados.forEach(m=>{
     const chave = trimestreDoMesCalendario(m.mes) + '-' + m.ano;
-    if (!grupos[chave]) grupos[chave] = [];
-    grupos[chave].push(m);
-  });
-  const chavesOrdenadas = Object.keys(grupos).sort((a,b)=>{
-    const [qa,ya] = a.split('-'); const [qb,yb] = b.split('-');
-    return ya!==yb ? ya-yb : qa-qb;
+    if (!grupos[chave]) grupos[chave] = { meses: [], receita: 0, receitaST: 0, q: trimestreDoMesCalendario(m.mes), ano: m.ano };
+    grupos[chave].meses.push(m.mes+'/'+m.ano);
+    grupos[chave].receita += receitaTotalDoMesC3(m);
+    grupos[chave].receitaST += (m.receitaST ? paraNumeroBR(m.receitaST) : 0);
   });
 
-  // Lê o "lucro real" e a "receita financeira" dos MESMOS campos por trimestre que o cálculo
-  // agregado usa (conforme o modo selecionado) — assim a soma da tabela mensal bate exatamente com
-  // o valor mostrado ao clicar em Trimestral/Semestral/Anual, em vez de reaproximar esses valores.
-  function camposDoTrimestre(indice){
-    if (statePeriodicidadeC3 === 'semestral'){
-      const i = indice+1; // 1 ou 2
-      return { folha: getMoney('folha_c3'), prolabore: getMoney('prolabore_c3'),
-        lucro: Math.max(0, getMoney('semLucroTrim'+i+'_c3')), fin: Math.max(0, getMoney('semFinTrim'+i+'_c3')) };
-    }
-    if (statePeriodicidadeC3 === 'anual'){
-      const i = indice+1; // 1..4
-      return { folha: Math.max(0, getMoney('folha_c3'))/4, prolabore: Math.max(0, getMoney('prolabore_c3'))/4,
-        lucro: getMoney('lucroTrim'+i+'_c3'), fin: Math.max(0, getMoney('finTrim'+i+'_c3')) };
-    }
-    if (statePeriodicidadeC3 === 'mensal'){
-      // No modo Mensal, o "Lucro real apurado no mês" (lucro_c3) é o campo próprio dessa periodicidade
-      // — antes ficava escondido na tela (nunca era mostrado) e essa função ainda lia o campo do
-      // Trimestral, então preencher o mês não tinha efeito nenhum no cálculo do Lucro Real.
-      return { folha: Math.max(0, getMoney('folha_c3')), prolabore: Math.max(0, getMoney('prolabore_c3')),
-        lucro: getMoney('lucro_c3'), fin: Math.max(0, getMoney('fin_c3')) };
-    }
-    // trimestral (ou fallback): um único trimestre de referência pra todos os grupos
-    return { folha: Math.max(0, getMoney('folha_c3')), prolabore: Math.max(0, getMoney('prolabore_c3')),
-      lucro: getMoney('lucroTrimestral_c3'), fin: Math.max(0, getMoney('finTrimestral_c3')) };
-  }
-
-  const ANEXO_TIPO_C3_LOCAL = { I:'comercio', II:'comercio', III:'servico', IV:'servico', V:'servico' };
-  const isComercioAtualC3Local = ATIVIDADES_C3[stateAtividadeC3] && ATIVIDADES_C3[stateAtividadeC3].tributo === 'icms';
   const resultadoPorMes = {};
-  chavesOrdenadas.forEach((chave, indice)=>{
-    const mesesDoTrimestre = grupos[chave];
-    const receitaTrimestre = mesesDoTrimestre.reduce((s,m)=> s+receitaTotalDoMesC3(m), 0);
-    const campos = camposDoTrimestre(indice);
-
-    // Mesma divisão comércio/serviços da tabela mensal — usada pra aplicar a majoração da LC224/2025
-    // corretamente (limite de R$1,25mi dividido PROPORCIONALMENTE entre os 2 tipos, não uma % média).
-    let receitaComercioTri = 0, receitaServicoTri = 0;
-    mesesDoTrimestre.forEach(m=>{
-      if (m.porAnexo){
-        Object.entries(m.porAnexo).forEach(([anexo,v])=>{
+  Object.entries(grupos).forEach(([chave, g])=>{
+    const lucroQ = lucroManualAtivoLocal
+      ? g.meses.reduce((s,chaveMes)=> s + (window.lucroManualPorMesC3[chaveMes]||0), 0)
+      : getMoney('lucro_c3') * g.meses.length;
+    const finTrimPreenchido = getMoney('finTrim'+g.q+'_c3') > 0;
+    const finQ = finTrimPreenchido ? Math.max(0, getMoney('finTrim'+g.q+'_c3')) : Math.max(0, getMoney('fin_c3')) * g.meses.length;
+    const icmsManualQ = icmsManualAtivoLocal
+      ? g.meses.reduce((s,chaveMes)=> s + (window.icmsManualPorMesC3[chaveMes]||0), 0)
+      : undefined;
+    const issManualQ = issManualAtivoLocal
+      ? g.meses.reduce((s,chaveMes)=> s + (window.issManualPorMesC3[chaveMes]||0), 0)
+      : undefined;
+    let receitaComercioQ = 0, receitaServicoQ = 0;
+    g.meses.forEach(chaveMes=>{
+      const mObj = mesesOrdenados.find(m=> (m.mes+'/'+m.ano)===chaveMes);
+      if (!mObj) return;
+      if (mObj.porAnexo){
+        Object.entries(mObj.porAnexo).forEach(([anexo,v])=>{
           const val = paraNumeroBR(v);
-          if (ANEXO_TIPO_C3_LOCAL[anexo]==='comercio') receitaComercioTri += val; else receitaServicoTri += val;
+          if (ANEXO_TIPO_C3_LOCAL[anexo]==='comercio') receitaComercioQ += val; else receitaServicoQ += val;
         });
       } else {
-        const total = receitaTotalDoMesC3(m);
-        if (isComercioAtualC3Local) receitaComercioTri += total; else receitaServicoTri += total;
+        const total = receitaTotalDoMesC3(mObj);
+        if (isComercioAtualC3Local) receitaComercioQ += total; else receitaServicoQ += total;
       }
     });
-    const splitTri = (receitaComercioTri > 0.5 && receitaServicoTri > 0.5) ? {comercio: receitaComercioTri, servico: receitaServicoTri} : null;
+    const splitComercioServicoQ = (receitaComercioQ > 0.5 && receitaServicoQ > 0.5) ? {comercio: receitaComercioQ, servico: receitaServicoQ} : null;
 
-    const p = presumidoDetalhado(receitaTrimestre, presIrpjPct, presCsllPct, campos.fin, 60000, csllTemMajoracaoNoTrimestre(chave.split('-')[1], parseInt(chave.split('-')[0],10)), splitTri);
-    const irpjcsllPres = p.irpjBase + p.irpjAdc + p.csll;
-    // Soma o ICMS/ISS informado mês a mês (quando ativo) pra cada mês desse trimestre — senão usa a
-    // alíquota fixa sobre a receita do trimestre inteiro, como antes.
-    const icms = temIcms
-      ? (icmsManualAtivo
-          ? mesesDoTrimestre.reduce((s,m)=> s + (window.icmsManualPorMesC3[m.mes+'/'+m.ano]||0), 0)
-          : receitaTrimestre * icmsDebitoAliq)
-      : 0;
-    const iss = temIss
-      ? (issManualAtivo
-          ? mesesDoTrimestre.reduce((s,m)=> s + (window.issManualPorMesC3[m.mes+'/'+m.ano]||0), 0)
-          : receitaTrimestre * issAliq)
-      : 0;
-    const { cbs, ibs } = calcularCbsIbsLiquidoC3(receitaTrimestre, temIcms, temIss, mesesDoTrimestre.length);
-    const inss = (campos.folha + campos.prolabore) * 0.20;
-    const ratPctLocal = Math.max(0, parseFloat(document.getElementById('ratPct_c3').value)) || 0;
-    const rat = campos.folha * (ratPctLocal/100);
-    const terceiros = campos.folha * terceirosPct;
-    const consumoEFolha = icms + iss + cbs + ibs + inss + rat + terceiros;
-    const totalPresTrimestre = irpjcsllPres + consumoEFolha;
-
-    // Lucro pode ser negativo (prejuízo) — isso é normal e esperado (uma empresa com prejuízo não
-    // paga IRPJ/CSLL naquele período). O IMPOSTO final nunca fica negativo (Math.max(0,...) aqui),
-    // mas o "lucro" em si já foi somado sem zerar o negativo (acima, em camposDoTrimestre) — assim
-    // um mês de prejuízo realmente reduz o total do trimestre, em vez de contar como zero.
-    const irpjBaseReal = Math.max(0, campos.lucro) * 0.15;
-    const irpjAdcReal = Math.max(0, campos.lucro - 60000) * 0.10;
-    const csllReal = Math.max(0, campos.lucro) * 0.09;
-    const totalRealTrimestre = irpjBaseReal + irpjAdcReal + csllReal + consumoEFolha;
+    const detalhe = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, lucroQ, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ);
+    const totalPresTrimestre = detalhe.pres.total;
+    const totalRealTrimestre = detalhe.real.total;
 
     // distribui proporcional à receita de cada mês dentro do trimestre (a soma volta a dar o total do trimestre)
-    mesesDoTrimestre.forEach(m=>{
-      const receitaMes = receitaTotalDoMesC3(m);
-      const proporcao = receitaTrimestre > 0 ? receitaMes/receitaTrimestre : 1/mesesDoTrimestre.length;
-      resultadoPorMes[m.mes+'/'+m.ano] = { totalPres: totalPresTrimestre*proporcao, totalReal: totalRealTrimestre*proporcao };
+    g.meses.forEach(chaveMes=>{
+      const mObj = mesesOrdenados.find(m=> (m.mes+'/'+m.ano)===chaveMes);
+      const receitaMes = mObj ? receitaTotalDoMesC3(mObj) : 0;
+      const proporcao = g.receita > 0 ? receitaMes/g.receita : 1/g.meses.length;
+      resultadoPorMes[chaveMes] = { totalPres: totalPresTrimestre*proporcao, totalReal: totalRealTrimestre*proporcao };
     });
   });
 
@@ -5418,11 +5479,22 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
   const pctSimplesCompras = parseFloat(document.getElementById('pctCreditoSimplesCompras_c3').value)||0;
   const pctSimplesDespesas = parseFloat(document.getElementById('pctCreditoSimplesDespesas_c3').value)||0;
   const pctDasEst = parseFloat(document.getElementById('pctDasEstimadoCompras_c3').value)||0;
-  const baseSimplesTotal = Math.max(0, getMoney('comprasValor_c3'))*(pctSimplesCompras/100)
-    + Math.max(0, getMoney('despesasValor_c3'))*(pctSimplesDespesas/100);
+  const pctRPComprasDetalhe = parseFloat(document.getElementById('pctCreditoRPCompras_c3').value)||0;
+  const pctRPDespesasDetalhe = parseFloat(document.getElementById('pctCreditoRPDespesas_c3').value)||0;
+  const cbsAliqDetalhe = parseFloat(document.getElementById('cbsAliq_c3').value)||0;
+  const ibsAliqDetalhe = parseFloat(document.getElementById('ibsAliq_c3').value)||0;
+  const comprasValorDetalhe = Math.max(0, getMoney('comprasValor_c3'));
+  const despesasValorDetalhe = Math.max(0, getMoney('despesasValor_c3'));
+  const baseSimplesTotal = comprasValorDetalhe*(pctSimplesCompras/100) + despesasValorDetalhe*(pctSimplesDespesas/100);
   // compras/despesas não têm quebra por trimestre na tela (é um valor só) — divide igualmente entre
   // os trimestres mostrados, senão a soma das colunas ficaria multiplicada pelo nº de trimestres
   const baseSimplesPorTrimestre = chaves.length > 0 ? baseSimplesTotal / chaves.length : 0;
+  // CBS/IBS não recuperável total (mesma fórmula do crédito do Híbrido): fornecedores do Real/
+  // Presumido pela alíquota cheia de CBS/IBS + fornecedores do Simples pelo "% do DAS estimado" —
+  // dividido igualmente entre os trimestres mostrados, pelo mesmo motivo do baseSimplesPorTrimestre.
+  const custoOcultoTotal = (comprasValorDetalhe*(pctRPComprasDetalhe/100) + despesasValorDetalhe*(pctRPDespesasDetalhe/100)) * ((cbsAliqDetalhe+ibsAliqDetalhe)/100)
+    + baseSimplesTotal*(pctDasEst/100);
+  const custoOcultoPorTrimestre = chaves.length > 0 ? custoOcultoTotal / chaves.length : 0;
   chaves.forEach(c=>{
     const g = grupos[c];
     // "Crédito repassado ao comprador": PIS/COFINS (→CBS) e ICMS/ISS (→IBS) já embutidos no próprio
@@ -5433,10 +5505,12 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
     // Crédito, DIFERENTE do de cima, que a PRÓPRIA empresa aproveita ao comprar de fornecedores do
     // Simples Nacional: usa o "% do DAS estimado" (padrão 2%, editável) sobre compras/despesas.
     g.creditoComprasFornecedorSimples = baseSimplesPorTrimestre * (pctDasEst/100);
-    // CBS/IBS não recuperável no DAS: mesma base usada acima pro crédito repassado (compras+despesas
-    // × % Simples), mas aqui SEM limitar pelo DAS — é o valor cheio embutido no que foi pago aos
-    // fornecedores, que no DAS puro nunca vira crédito (diferente do Híbrido, que recupera integral).
-    g.custoOcultoDAS = baseSimplesPorTrimestre;
+    // CBS/IBS não recuperável no DAS: é o MESMO valor que seria recuperado no Híbrido — no DAS puro,
+    // esse valor fica embutido no que foi pago aos fornecedores sem nunca virar crédito, aqui SEM
+    // limitar por nada (diferente do crédito repassado acima, que é limitado ao próprio DAS pago).
+    // Antes considerava só a parte de fornecedores do Simples, ignorando a parte de fornecedores do
+    // Real/Presumido, que também não gera crédito nenhum dentro do DAS.
+    g.custoOcultoDAS = custoOcultoPorTrimestre;
   });
 
   // Presumido/Real: calcula o detalhamento REAL de cada trimestre, reaproveitando o cálculo já
@@ -5775,8 +5849,13 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
     const pctSimplesCompras = parseFloat(document.getElementById('pctCreditoSimplesCompras_c3').value)||0;
     const pctSimplesDespesas = parseFloat(document.getElementById('pctCreditoSimplesDespesas_c3').value)||0;
     const pctDasEst = parseFloat(document.getElementById('pctDasEstimadoCompras_c3').value)||0;
-    const baseSimples = Math.max(0, getMoney('comprasValor_c3'))*(pctSimplesCompras/100)
-      + Math.max(0, getMoney('despesasValor_c3'))*(pctSimplesDespesas/100);
+    const pctRPComprasMensal = parseFloat(document.getElementById('pctCreditoRPCompras_c3').value)||0;
+    const pctRPDespesasMensal = parseFloat(document.getElementById('pctCreditoRPDespesas_c3').value)||0;
+    const cbsAliqMensal = parseFloat(document.getElementById('cbsAliq_c3').value)||0;
+    const ibsAliqMensal = parseFloat(document.getElementById('ibsAliq_c3').value)||0;
+    const comprasValorMensal = Math.max(0, getMoney('comprasValor_c3'));
+    const despesasValorMensal = Math.max(0, getMoney('despesasValor_c3'));
+    const baseSimples = comprasValorMensal*(pctSimplesCompras/100) + despesasValorMensal*(pctSimplesDespesas/100);
     const totalCreditoACbsIbs = mesesOrdenados.reduce((s,mes,idx)=>{
       const l = linhasPorMes ? linhasPorMes[idx] : null;
       return s + (l ? l.creditoACbs+l.creditoAIbs : 0);
@@ -5785,9 +5864,19 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
       const l = linhasPorMes ? linhasPorMes[idx] : null;
       return s + (l ? l.debitoCbsIbs : 0);
     }, 0);
+    const totalDASPeriodo = mesesOrdenados.reduce((s,mes,idx)=>{
+      const l = linhasPorMes ? linhasPorMes[idx] : null;
+      return s + (l ? l.dasMes : 0);
+    }, 0);
     const creditoRepassadoDAS = totalCreditoACbsIbs;
     // Crédito nas COMPRAS de fornecedores do Simples Nacional (mecanismo diferente do de cima).
     const creditoComprasFornecedorSimples = baseSimples * (pctDasEst/100);
+    // CBS/IBS não recuperável no DAS: é o MESMO valor que seria recuperado no Híbrido (fornecedores
+    // do Real/Presumido pela alíquota cheia de CBS/IBS + fornecedores do Simples pelo "% do DAS
+    // estimado") — no DAS puro, esse valor fica embutido no preço pago aos fornecedores sem nunca
+    // virar crédito. Antes essa linha nem existia nessa visão (só na detalhada e no card único).
+    const custoOcultoMensal = (comprasValorMensal*(pctRPComprasMensal/100) + despesasValorMensal*(pctRPDespesasMensal/100)) * ((cbsAliqMensal+ibsAliqMensal)/100)
+      + baseSimples*(pctDasEst/100);
     let linhasCredito = '';
     if (opcoes.incluirSimplesDAS && creditoRepassadoDAS > 0.5){
       linhasCredito += `<div class="line"><span>↳ crédito repassado ao comprador — DAS (PIS/COFINS/ICMS-ISS embutidos, total do período)</span><span>${fmt(creditoRepassadoDAS)}</span></div>`;
@@ -5797,6 +5886,10 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
     }
     if (opcoes.incluirSimplesHibrido && totalDebitoCbsIbsHibrido > 0.5){
       linhasCredito += `<div class="line"><span>↳ crédito repassado ao comprador — Híbrido (total do período)</span><span>${fmt(totalDebitoCbsIbsHibrido)}</span></div>`;
+    }
+    if (opcoes.incluirSimplesDAS && custoOcultoMensal > 0.5){
+      linhasCredito += `<div class="line" style="font-size:12px; opacity:.75;"><span>↳ CBS/IBS não recuperável no DAS (total do período)</span><span>${fmt(custoOcultoMensal)}</span></div>
+      <div class="line total" style="border-top:2px solid var(--ink); margin-top:6px; padding-top:8px;"><span>Total DAS + CBS/IBS não recuperável (total do período)</span><span>${fmt(totalDASPeriodo + custoOcultoMensal)}</span></div>`;
     }
     if (linhasCredito) html += linhasCredito;
   }
@@ -5857,6 +5950,15 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
       if (abrindo) memoriaEl.innerHTML = gerarMemoriaCalculoC3(mesesOrdenados, opcoes);
     });
   }
+  // calcularPresumidoRealPorTrimestreC3 (acima) chama calcComp3() internamente uma vez por
+  // trimestre-calendário (via calcularDetalhadoTrimestreEspecificoC3) — cada uma dessas chamadas
+  // internas re-renderiza o card único por cima, deixando "cardsComparativoC3" visível e ESTA tabela
+  // escondida quando a última chamada interna termina. Reforça aqui a visibilidade correta (tabela
+  // visível, cards únicos escondidos) depois que tudo já rodou, senão a tela mostra o card único
+  // genérico em vez da tabela com os meses reais importados.
+  wrap.style.display = 'block';
+  document.getElementById('cardsComparativoC3').style.display = 'none';
+  document.getElementById('cardsComparativoC3b').style.display = 'none';
 }
 
 function gerarMemoriaCalculoC3(mesesOrdenados, opcoes){
@@ -6215,18 +6317,31 @@ function calcComp3(){
   const creditoBaseRP = creditoComprasRP + creditoDespesasRP; // usado para ICMS (sem redutor de atividade)
   const icmsCompras = creditoBaseRP;
   const pctDasEst = parseFloat(document.getElementById('pctDasEstimadoCompras_c3').value)||0;
-  // Base de crédito de CBS/IBS pro Presumido/Real: soma a parte "% Presumido/Real" (crédito cheio)
-  // com a parte "% Simples" (reduzida pelo "% estimado de CBS/IBS de compras de empresas Simples
-  // Nacional") — a mesma regra que já vale pro Híbrido, agora também pro Presumido/Real. O crédito
-  // de ICMS (icmsCompras/creditoBaseRP, acima) continua só com a parte "% Presumido/Real", já que
-  // o "% estimado de CBS/IBS" não tem relação com ICMS.
-  const creditoComprasCbsIbsRP = creditoComprasRP + comprasUnico*(pctCreditoSimplesCompras/100)*(pctDasEst/100);
-  const creditoDespesasCbsIbsRP = creditoDespesasRP + despesasUnico*(pctCreditoSimplesDespesas/100)*(pctDasEst/100);
+  // Crédito de CBS/IBS sobre compras/despesas tem DOIS componentes com fórmulas DIFERENTES (não podem
+  // ser somados numa única base e depois multiplicados pela alíquota de CBS/IBS inteira):
+  // 1) Fornecedores do Real/Presumido: crédito PLENO — (compras × % RP) × alíquota de CBS/IBS.
+  // 2) Fornecedores do Simples Nacional: crédito PRESUMIDO pelo "% do DAS estimado" — esse percentual
+  //    JÁ é o valor final do crédito (ex.: 100mil × 10% × 2% = R$200), não deve ser multiplicado pela
+  //    alíquota de CBS/IBS de novo. Como CBS e IBS têm linhas de crédito separadas mais abaixo, esse
+  //    valor único é repartido entre as duas proporcionalmente às suas alíquotas (ex.: CBS 9,21% e
+  //    IBS 18,5% → CBS fica com 9,21/(9,21+18,5) do total, IBS com o restante) — assim a SOMA das
+  //    duas linhas bate exatamente com o valor único esperado.
+  const creditoComprasFornecedorSimplesTotal = comprasUnico*(pctCreditoSimplesCompras/100)*(pctDasEst/100);
+  const creditoDespesasFornecedorSimplesTotal = despesasUnico*(pctCreditoSimplesDespesas/100)*(pctDasEst/100);
 
   // ---- Compras/despesas do Simples (informativo + modo híbrido) ----
   const creditoComprasSimples = comprasUnico*(pctCreditoSimplesCompras/100); // sujeito ao redutor da atividade (CBS/IBS híbrido)
   const creditoDespesasSimples = despesasUnico*(pctCreditoSimplesDespesas/100); // gastos gerais/PJ — sem redução
   const creditoBaseSimples = creditoComprasSimples + creditoDespesasSimples;
+  // CBS/IBS não recuperável no DAS: é o MESMO valor que seria recuperado no Híbrido (fornecedores do
+  // Real/Presumido pela alíquota cheia de CBS/IBS + fornecedores do Simples pelo "% do DAS
+  // estimado") — no DAS puro, esse valor fica embutido no preço pago aos fornecedores sem nunca virar
+  // crédito, então é exatamente o "custo" de ficar no DAS. Antes considerava só creditoBaseSimples
+  // (a parte de fornecedores do Simples), ignorando a parte — normalmente maior — de fornecedores do
+  // Real/Presumido, que também não gera crédito nenhum dentro do DAS.
+  const ibsAliqParaCustoOculto = parseFloat(document.getElementById('ibsAliq_c3').value)||0;
+  const custoOcultoCompletoC3 = (creditoComprasRP + creditoDespesasRP) * ((cbsAliq+ibsAliqParaCustoOculto)/100)
+    + creditoBaseSimples * (pctDasEst/100);
   // Crédito repassável ao comprador no DAS especificamente: usa um 2º fator "% do DAS estimado como
   // CBS/IBS", já que o repasse no DAS é bem menor que o crédito pleno do Híbrido (ex.: 100mil × 100%
   // Simples × 2% do DAS = R$2.000) — não mexe em creditoBaseSimples, que segue servindo ao Híbrido.
@@ -6365,13 +6480,24 @@ function calcComp3(){
 
     totalSimplesDAS = dasSimples + tributoForaMensal;
 
-    // ---- Simples Híbrido: CBS/IBS calculados fora do DAS, crédito pleno sobre compras/despesas do Simples ----
+    // ---- Simples Híbrido: CBS/IBS calculados fora do DAS, crédito sobre compras/despesas ----
     const fatorRedutorAtividadeHibrido = 1 - (ATIVIDADES_C3[stateAtividadeC3].redutor/100);
     const ibsAliqHibrido = parseFloat(document.getElementById('ibsAliq_c3').value)||0;
     const dasReduzidoHibrido = totalSimplesDAS - parteSubstituida;
     const debitoCbsIbsHibrido = receita_multi * ((cbsAliq+ibsAliqHibrido)/100) * fatorRedutorAtividadeHibrido;
-    const creditoCbsIbsHibrido = (creditoComprasSimples * fatorRedutorAtividadeHibrido + creditoDespesasSimples * fatorRedutorAtividadeHibrido) * ((cbsAliq+ibsAliqHibrido)/100);
-    const liquidoCbsIbsHibrido = Math.max(0, debitoCbsIbsHibrido - creditoCbsIbsHibrido);
+    // Mesma separação de componentes do Presumido/Real (ver comentário acima, em creditoComprasRP):
+    // fornecedores do Real/Presumido dão crédito pleno (× alíquota CBS/IBS); fornecedores do Simples
+    // dão crédito só pelo "% do DAS estimado" (já é o valor final, sem multiplicar pela alíquota de
+    // novo — a fórmula anterior ignorava por completo a parte Real/Presumido e ainda multiplicava a
+    // parte Simples pela alíquota uma segunda vez).
+    const creditoCbsIbsHibrido = ((creditoComprasRP + creditoDespesasRP) * ((cbsAliq+ibsAliqHibrido)/100)
+      + (creditoComprasFornecedorSimplesTotal + creditoDespesasFornecedorSimplesTotal)) * fatorRedutorAtividadeHibrido;
+    // Crédito de transição do estoque (LC 214/2025): estoque em 31/12/2026 × alíquota de CBS/IBS =
+    // crédito TOTAL, usado em 12 parcelas mensais iguais — SEMPRE dividido por 12, independente do
+    // período calculado aqui ter mais ou menos meses.
+    const estoqueValorC3 = Math.max(0, getMoney('estoqueValor_c3'));
+    const creditoEstoqueMensalC3 = (estoqueValorC3 * (cbsAliq+ibsAliqHibrido)/100) / 12;
+    const liquidoCbsIbsHibrido = Math.max(0, debitoCbsIbsHibrido - creditoCbsIbsHibrido - creditoEstoqueMensalC3);
     totalSimplesHibrido = dasReduzidoHibrido + liquidoCbsIbsHibrido;
 
     document.getElementById('faixaTag_c3').textContent = multiAnexo
@@ -6388,13 +6514,15 @@ function calcComp3(){
     // Só aparece quando há Compras/Despesas preenchidas; não soma no "Total a recolher" — é só pra
     // dar noção do impacto econômico real de ficar no DAS, sem misturar com o valor efetivamente
     // pago ao governo.
-    document.getElementById('c3_das_custo_oculto_row').style.display = creditoBaseSimples > 0.5 ? 'flex' : 'none';
-    document.getElementById('c3_das_custo_oculto').textContent = fmtP(creditoBaseSimples);
-    document.getElementById('c3_das_total_com_custo_row').style.display = creditoBaseSimples > 0.5 ? 'flex' : 'none';
-    document.getElementById('c3_das_total_com_custo').textContent = fmtP(totalSimplesDAS + creditoBaseSimples);
+    document.getElementById('c3_das_custo_oculto_row').style.display = custoOcultoCompletoC3 > 0.5 ? 'flex' : 'none';
+    document.getElementById('c3_das_custo_oculto').textContent = fmtP(custoOcultoCompletoC3);
+    document.getElementById('c3_das_total_com_custo_row').style.display = custoOcultoCompletoC3 > 0.5 ? 'flex' : 'none';
+    document.getElementById('c3_das_total_com_custo').textContent = fmtP(totalSimplesDAS + custoOcultoCompletoC3);
     document.getElementById('c3_hib_das').textContent = fmtP(dasReduzidoHibrido);
     document.getElementById('c3_hib_debito').textContent = fmtP(debitoCbsIbsHibrido);
     document.getElementById('c3_hib_credito_compras').textContent = '– ' + fmtP(creditoCbsIbsHibrido);
+    document.getElementById('c3_hib_credito_estoque_row').style.display = creditoEstoqueMensalC3 > 0.5 ? 'flex' : 'none';
+    document.getElementById('c3_hib_credito_estoque').textContent = '– ' + fmtP(creditoEstoqueMensalC3);
     document.getElementById('c3_hib_total').textContent = fmtP(totalSimplesHibrido);
 
     // ---- Crédito repassado ao comprador em cada modo ----
@@ -6528,20 +6656,26 @@ function calcComp3(){
 
   // ---- CBS líquido ----
   const cbsDebito = baseCbsIbsComRedutorSocial * (cbsAliq/100) * fatorRedutorC3;
-  const cbsCreditoCompras = creditoComprasCbsIbsRP * (cbsAliq/100) * fatorRedutorC3; // reduzido pelo redutor da atividade
-  const cbsCreditoDespesas = creditoDespesasCbsIbsRP * (cbsAliq/100) * fatorRedutorC3; // idem — mesmo redutor da atividade se aplica às despesas
+  const ibsAliqC3 = parseFloat(document.getElementById('ibsAliq_c3').value)||0;
+  // A parte do crédito vinda de fornecedores do Simples (creditoComprasFornecedorSimplesTotal, já é
+  // um valor final único — não separado entre CBS e IBS) é repartida entre as duas linhas
+  // proporcionalmente às suas alíquotas, pra a soma bater exatamente com esse valor único.
+  const somaAliqCbsIbs = cbsAliq + ibsAliqC3;
+  const proporcaoCbsNoCredito = somaAliqCbsIbs > 0 ? cbsAliq/somaAliqCbsIbs : 0.5;
+  const cbsCreditoCompras = (creditoComprasRP * (cbsAliq/100) + creditoComprasFornecedorSimplesTotal * proporcaoCbsNoCredito) * fatorRedutorC3; // reduzido pelo redutor da atividade
+  const cbsCreditoDespesas = (creditoDespesasRP * (cbsAliq/100) + creditoDespesasFornecedorSimplesTotal * proporcaoCbsNoCredito) * fatorRedutorC3; // idem — mesmo redutor da atividade se aplica às despesas
   const cbsCredito = cbsCreditoCompras + cbsCreditoDespesas;
   const cbsSaldoCredor = Math.max(0, cbsCredito - cbsDebito);
   const cbsLiquido = Math.max(0, cbsDebito - cbsCredito);
 
   // ---- IBS líquido — só calcula quando ICMS e ISS estão desmarcados (mutuamente exclusivos: hoje é ICMS/ISS, ou já é IBS) ----
   const calcularIBS = !temIcms && !temIss;
-  const ibsAliqC3 = parseFloat(document.getElementById('ibsAliq_c3').value)||0;
   let ibsDebito = 0, ibsCredito = 0, ibsCreditoCompras = 0, ibsCreditoDespesas = 0, ibsLiquido = 0, ibsSaldoCredor = 0;
   if (calcularIBS){
+    const proporcaoIbsNoCredito = 1 - proporcaoCbsNoCredito;
     ibsDebito = baseCbsIbsComRedutorSocial * (ibsAliqC3/100) * fatorRedutorC3;
-    ibsCreditoCompras = creditoComprasCbsIbsRP * (ibsAliqC3/100) * fatorRedutorC3; // reduzido pelo redutor da atividade
-    ibsCreditoDespesas = creditoDespesasCbsIbsRP * (ibsAliqC3/100) * fatorRedutorC3; // idem — mesmo redutor da atividade se aplica às despesas
+    ibsCreditoCompras = (creditoComprasRP * (ibsAliqC3/100) + creditoComprasFornecedorSimplesTotal * proporcaoIbsNoCredito) * fatorRedutorC3; // reduzido pelo redutor da atividade
+    ibsCreditoDespesas = (creditoDespesasRP * (ibsAliqC3/100) + creditoDespesasFornecedorSimplesTotal * proporcaoIbsNoCredito) * fatorRedutorC3; // idem — mesmo redutor da atividade se aplica às despesas
     ibsCredito = ibsCreditoCompras + ibsCreditoDespesas;
     ibsLiquido = Math.max(0, ibsDebito - ibsCredito);
     ibsSaldoCredor = Math.max(0, ibsCredito - ibsDebito);
@@ -6881,7 +7015,7 @@ function calcComp3(){
 
 document.getElementById('comprasValor_c3').addEventListener('input', function(){ this.dataset.manual = 'true'; });
 initMoneyInputs(['rbt12_c3','rba_c3','receita_c3','lucro_c3','fin_c3','folha_c3','prolabore_c3',
-  'comprasValor_c3','despesasValor_c3','pago2026_c3','receitaOutraLocacao_c3',
+  'comprasValor_c3','despesasValor_c3','pago2026_c3','receitaOutraLocacao_c3','estoqueValor_c3',
   'icmsCreditoReal_c3',
   'receitaTrimestral_c3','receitaSTTrimestral_c3','lucroTrimestral_c3','finTrimestral_c3',
   'trim1_c3','trim2_c3','trim3_c3','trim4_c3','lucroTrim1_c3','lucroTrim2_c3','lucroTrim3_c3','lucroTrim4_c3',
@@ -7708,6 +7842,11 @@ function importarSimulacao(file){
       buildReceitasPorAnexoC3();
       buildPeriodos();
       buildPeriodosC3();
+      // Backups salvos antes dessa correção existir podem ter Compras/Despesas preenchidas só na
+      // Aba 1 (já que o botão "Importar da Aba 1" não trazia esses campos ainda) — sincroniza aqui
+      // automaticamente, sem sobrescrever nada que a Aba 2 já tenha (sincronizarComprasDespesasAba1ParaAba2
+      // só age quando a Aba 2 está zerada nesses campos).
+      sincronizarComprasDespesasAba1ParaAba2(false);
       if (apuracaoMensalState.pdfMeses || apuracaoMensalState.projecaoMeses){
         recalcularApuracaoCombinada();
       } else {
