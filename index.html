@@ -26,6 +26,14 @@
     --credit-dim:#E7F1EA;
     --alert:#A64B3C;
     --alert-dim:#F7E9E6;
+    --azul:#3E6B93;
+    --azul-dim:#E5EDF3;
+    --roxo:#7A5C93;
+    --roxo-dim:#EEE8F3;
+    --ciano:#2D7373;
+    --ciano-dim:#E3F0F0;
+    --slate:#5C6B7A;
+    --slate-dim:#E9ECEF;
   }
   *{box-sizing:border-box;}
   body{
@@ -198,6 +206,49 @@
   details.acc summary::after{content:'+';font-size:16px;font-weight:600;color:var(--body);}
   details.acc[open] summary::after{content:'–';}
   details.acc summary:hover{color:var(--brand);}
+  /* Destaque por categoria — cor de fundo + ícone, pra achar cada quadro rapidamente ao rolar a
+     tela, em vez de todos os títulos terem exatamente o mesmo visual neutro. */
+  details.acc.acc-receita, details.acc.acc-importar, details.acc.acc-projecao,
+  details.acc.acc-icms, details.acc.acc-iss, details.acc.acc-folha,
+  details.acc.acc-compras, details.acc.acc-comparacao{
+    border:none; overflow:hidden; padding:0;
+  }
+  details.acc.acc-receita summary{background:var(--teal-dim); color:var(--teal-strong);}
+  details.acc.acc-receita summary::before{content:'💰 '; font-size:12px;}
+  details.acc.acc-importar summary{background:var(--gold-dim); color:var(--gold);}
+  details.acc.acc-importar summary::before{content:'📄 '; font-size:12px;}
+  details.acc.acc-projecao summary{background:var(--credit-dim); color:var(--credit);}
+  details.acc.acc-projecao summary::before{content:'📈 '; font-size:12px;}
+  details.acc.acc-icms summary{background:var(--azul-dim); color:var(--azul);}
+  details.acc.acc-icms summary::before{content:'🧾 '; font-size:12px;}
+  details.acc.acc-iss summary{background:var(--roxo-dim); color:var(--roxo);}
+  details.acc.acc-iss summary::before{content:'🏙️ '; font-size:12px;}
+  details.acc.acc-folha summary{background:var(--ciano-dim); color:var(--ciano);}
+  details.acc.acc-folha summary::before{content:'👥 '; font-size:12px;}
+  details.acc.acc-compras summary{background:var(--alert-dim); color:var(--alert);}
+  details.acc.acc-compras summary::before{content:'🛒 '; font-size:12px;}
+  details.acc.acc-comparacao summary{background:var(--slate-dim); color:var(--slate);}
+  details.acc.acc-comparacao summary::before{content:'⚖️ '; font-size:12px;}
+  details.acc.acc-receita summary, details.acc.acc-importar summary, details.acc.acc-projecao summary,
+  details.acc.acc-icms summary, details.acc.acc-iss summary, details.acc.acc-folha summary,
+  details.acc.acc-compras summary, details.acc.acc-comparacao summary{
+    padding:12px 14px; margin:0;
+  }
+  details.acc.acc-receita[open] summary, details.acc.acc-importar[open] summary, details.acc.acc-projecao[open] summary,
+  details.acc.acc-icms[open] summary, details.acc.acc-iss[open] summary, details.acc.acc-folha[open] summary,
+  details.acc.acc-compras[open] summary, details.acc.acc-comparacao[open] summary{
+    border-bottom:1px solid var(--line);
+  }
+  details.acc.acc-receita > *:not(summary), details.acc.acc-importar > *:not(summary), details.acc.acc-projecao > *:not(summary),
+  details.acc.acc-icms > *:not(summary), details.acc.acc-iss > *:not(summary), details.acc.acc-folha > *:not(summary),
+  details.acc.acc-compras > *:not(summary), details.acc.acc-comparacao > *:not(summary){
+    margin-left:14px; margin-right:14px;
+  }
+  details.acc.acc-receita[open], details.acc.acc-importar[open], details.acc.acc-projecao[open],
+  details.acc.acc-icms[open], details.acc.acc-iss[open], details.acc.acc-folha[open],
+  details.acc.acc-compras[open], details.acc.acc-comparacao[open]{
+    padding-bottom:14px;
+  }
 
   .period-select{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
   .period-opt{
@@ -392,6 +443,19 @@
 .relatorio-tabela th{background:#f0efe9; font-weight:600; text-align:right;}
 .relatorio-tabela th:first-child, .relatorio-tabela td:first-child{text-align:left;}
 .relatorio-tabela tfoot td{font-weight:700; background:#f7f6f2;}
+@media print {
+  /* Sem isso, uma linha de tabela que cai bem na fronteira entre duas páginas é cortada no meio —
+     metade fica presa no fim de uma página, a outra metade "some" ou reaparece duplicada no topo da
+     próxima (foi o que aconteceu no relatório: "Terceiros (Sistema S) + RAT/SAT" ficou ilegível no
+     fim da página 1 e reapareceu certa no topo da página 2). break-inside:avoid força o navegador a
+     empurrar a linha inteira pra página seguinte em vez de cortá-la ao meio.
+     Aplica em QUALQUER tabela impressa (não só .relatorio-tabela) — inclui as tabelas HTML geradas
+     inline (memória de cálculo, resumo mensal), que tinham o mesmo problema. */
+  table tr, .relatorio-tabela tr { break-inside: avoid; page-break-inside: avoid; }
+  .linha-multi { break-inside: avoid; page-break-inside: avoid; }
+  thead { display: table-header-group; } /* cabeçalho se repete em cada página, se a tabela continuar */
+  tfoot { display: table-footer-group; }
+}
 .btn-imprimir{background:var(--teal-strong); color:#fff; border:none; border-radius:8px; padding:10px 18px; font-weight:600; cursor:pointer; font-family:'Space Grotesk',sans-serif; margin-top:12px;}
 .btn-imprimir:hover{opacity:0.9;}
 </style>
@@ -431,12 +495,14 @@
   <div class="panel" style="padding:16px 22px;">
     <div class="row2">
       <div>
-        <label style="margin-top:0">Nome / Razão social do cliente</label>
-        <input type="text" id="clienteNome" placeholder="Nome da empresa">
+        <label style="margin-top:0">Nome / Razão social do cliente
+          <span class="hint">preenchido automaticamente pela busca de "CNPJ" no painel "Dados da empresa" — não é digitado aqui</span>
+        </label>
+        <input type="text" id="clienteNome" placeholder="Preenchido pela busca de CNPJ" readonly style="background:var(--paper); cursor:not-allowed;">
       </div>
       <div>
         <label style="margin-top:0">CNPJ</label>
-        <input type="text" inputmode="numeric" id="clienteCnpj" placeholder="00.000.000/0000-00" maxlength="18">
+        <input type="text" inputmode="numeric" id="clienteCnpj" placeholder="Preenchido pela busca de CNPJ" maxlength="18" readonly style="background:var(--paper); cursor:not-allowed;">
       </div>
     </div>
   </div>
@@ -456,8 +522,8 @@
     <div class="panel">
       <h2>Dados da empresa</h2>
 
-      <label>CNPJ (opcional)
-        <span class="hint">busca automática das atividades cadastradas na Receita Federal, pra sugerir o Anexo</span>
+      <label>CNPJ (obrigatório)
+        <span class="hint">busca automática das atividades cadastradas na Receita Federal, pra sugerir o Anexo — preenche também o Nome/CNPJ do cliente no topo</span>
       </label>
       <div class="row2">
         <div>
@@ -496,7 +562,7 @@
       <span class="redutor-tag" id="anexoContagem">—</span>
       <div class="anexo-label" id="anexoLabel"></div>
 
-      <details class="acc">
+      <details class="acc acc-receita">
         <summary>Receita bruta (RBT12 e RBA)</summary>
         <label style="margin-top:10px">Receita bruta últimos 12 meses (RBT12)
           <span class="hint">usada para achar a faixa e a alíquota efetiva</span>
@@ -509,7 +575,7 @@
         <input type="text" inputmode="decimal" class="money" id="rba" value="0,00">
       </details>
 
-      <details class="acc">
+      <details class="acc acc-importar">
         <summary>Importar receita mensal de um PDF — apuração mês a mês</summary>
         <span class="hint">O resultado (comparativo dos cenários e o RBT12 acumulado) aparece no painel da direita, junto com a carga tributária.</span>
 
@@ -546,7 +612,7 @@
         <button type="button" id="btnLimparImportMensal" class="pdf-valor-btn" style="margin-top:10px;">Limpar importação</button>
       </details>
 
-      <details class="acc">
+      <details class="acc acc-projecao">
         <summary>Projeção mensal do Simples (receita estimada, sem PDF)</summary>
         <span class="hint">digite a receita estimada de cada mês futuro — usa o mesmo RBT12 girando (preciso, se você importou o PDF do passo 1 acima; senão, por aproximação) e o mesmo cálculo DAS × Híbrido</span>
         <label style="margin-top:10px; max-width:100px; font-size:11px;">Ano
@@ -576,7 +642,7 @@
         </div>
       </div>
 
-      <details class="acc">
+      <details class="acc acc-compras">
         <summary>Compras/despesas e créditos de CBS/IBS</summary>
         <span class="hint">"% Presumido/Real" e "% Simples" juntos somam sempre 100% em cada linha (se um sobe, o outro desce) — é a divisão percentual de quanto da compra/despesa veio de fornecedor Presumido/Real vs Simples. Se 100% Presumido/Real, o valor total entra na base do crédito de CBS/IBS do Híbrido. A parte "% Simples" usa "% do DAS estimado" pra achar o crédito repassável (ex.: 100mil × 100% Simples × 2% do DAS = R$2.000)</span>
         <div class="row3" id="comprasRowWrap">
@@ -646,6 +712,12 @@
         </div>
 
         <p class="hint" style="margin-top:10px;">Só PJ gera crédito. No DAS, o crédito repassado é (compras+despesas × % Simples) × "% do DAS estimado"; no Híbrido, é (compras+despesas) × "% Presumido/Real" direto — se 100%, o valor total vira base do crédito. <b>O crédito do DAS depende das alíquotas de CBS/IBS estarem preenchidas</b> ("CBS (%)"/"IBS (%)", no bloco "Período · alíquotas fora do DAS") — com elas zeradas, esse crédito sempre fica R$0,00.</p>
+      </details>
+
+      <details class="acc acc-comparacao">
+        <summary>Comparação com 2026 (valor já pago, referência)</summary>
+        <label style="margin-top:0">Total pago em 2026 (equivalente mensal)</label>
+        <input type="text" inputmode="decimal" class="money" id="pago2026" value="0,00">
       </details>
 
       <fieldset id="icmsForaNormalWrap" style="display:none">
@@ -732,6 +804,8 @@
           <div class="line hint-line" id="a_custo_oculto_row" style="display:none; opacity:.75; font-size:12px;"><span>↳ CBS/IBS não recuperável (compras/despesas) <span class="hint" style="display:block;">não entra no "Total a recolher" — é o custo que fica "preso" no preço pago aos fornecedores, sem virar crédito no DAS (diferente do Híbrido, que recupera esse valor); aumenta o custo real de aquisição</span></span><span id="a_custo_oculto">—</span></div>
           <div class="line total" id="a_total_com_custo_row" style="display:none; border-top:2px solid var(--ink); margin-top:6px; padding-top:8px;"><span>Total DAS + CBS/IBS não recuperável</span><span id="a_total_com_custo">—</span></div>
           <span class="badge limited" id="a_badge">crédito limitado ao valor pago no DAS</span>
+          <div class="line" id="a_pago2026_row" style="display:none"><span>Valor pago (2026)</span><span id="a_pago2026">—</span></div>
+          <div class="line" id="a_vs2026_row" style="display:none"><span>↳ diferença (calculado − pago)</span><span id="a_vs2026">—</span></div>
         </div>
 
         <div class="receipt b">
@@ -743,6 +817,8 @@
           <div class="line" id="b_credito_estoque_row" style="display:none; font-size:12px;"><span>(–) Crédito de estoque — transição (1/12 do saldo em 31/12/2026)</span><span id="b_credito_estoque">—</span></div>
           <div class="line total"><span>Total a recolher</span><span id="b_total">—</span></div>
           <span class="badge credit" id="b_badge">crédito pleno repassado ao cliente</span>
+          <div class="line" id="b_pago2026_row" style="display:none"><span>Valor pago (2026)</span><span id="b_pago2026">—</span></div>
+          <div class="line" id="b_vs2026_row" style="display:none"><span>↳ diferença (calculado − pago)</span><span id="b_vs2026">—</span></div>
         </div>
       </div>
 
@@ -796,8 +872,8 @@
       <span class="redutor-tag" id="redutorTagC3">—</span>
       <span class="hint" id="atividadeContagemC3" style="display:block; margin-top:4px;"></span>
 
-      <label style="margin-top:14px">CNPJ (opcional)
-        <span class="hint">busca automática das atividades cadastradas na Receita Federal, pra sugerir o Anexo</span>
+      <label style="margin-top:14px">CNPJ (obrigatório)
+        <span class="hint">busca automática das atividades cadastradas na Receita Federal, pra sugerir o Anexo — preenche também o Nome/CNPJ do cliente no topo</span>
       </label>
       <div class="row2">
         <div>
@@ -888,7 +964,7 @@
         </div>
       </div>
 
-      <details class="acc">
+      <details class="acc acc-receita">
         <summary>Receita, RBT12/RBA e lucro (Simples, Presumido e Real)</summary>
         <div class="row2" id="rbt12RbaWrapC3" style="margin-top:10px;">
           <div>
@@ -973,7 +1049,7 @@
         </div>
       </details>
 
-      <details class="acc">
+      <details class="acc acc-importar">
         <summary>Importar receita mensal de um PDF — preenche mensal/trimestral/anual automaticamente</summary>
         <span class="hint"><b>Um único import alimenta todos os regimes marcados na comparação</b> (Simples DAS, Simples Híbrido, Presumido e Real) — mesmo que nenhuma das duas opções de Simples esteja marcada. O valor de cada mês importado (ou projetado) é analisado mês a mês e alocado automaticamente em cada trimestre, e no modo Anual se selecionado.</span>
 
@@ -1019,7 +1095,7 @@
         <button type="button" id="btnLimparImportMensalC3" class="pdf-valor-btn" style="margin-top:10px;">Limpar importação</button>
       </details>
 
-      <details class="acc">
+      <details class="acc acc-projecao">
         <summary>Projeção mensal de receita (sem PDF)</summary>
         <span class="hint">digite a receita estimada de cada mês futuro — preenche os mesmos campos mensal/trimestral/anual, para todos os regimes marcados na comparação</span>
         <div class="notice" id="projecaoTipoReceitaC3" style="margin-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
@@ -1155,7 +1231,7 @@
         <span class="hint">Cada trimestre tem seu próprio limite de R$60.000 pra majoração do IRPJ (LC 224/2025) — sem a compensação de R$5.000.000/ano, que só se aplica ao fechamento do ano completo. A cálculo do Simples acompanha a periodicidade escolhida.</span>
       </fieldset>
 
-      <details class="acc" id="icmsFieldset_c3">
+      <details class="acc acc-icms" id="icmsFieldset_c3">
         <summary>
           <input type="checkbox" id="temIcms_c3" checked onclick="event.stopPropagation()" style="margin-right:8px; vertical-align:middle;">
           <span onclick="document.getElementById('temIcms_c3').click(); event.stopPropagation();">Tem Incidência de ICMS (Real e Presumido)</span>
@@ -1176,10 +1252,8 @@
           <label style="margin:0" for="icmsForaNormalCheckC3">Simples DAS: calcular o ICMS/ISS "por fora" pelo débito/crédito acima, em vez da fórmula-teto oficial</label>
         </div>
         <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
-          <label style="margin-top:0">Crédito de ICMS das entradas (R$)
-            <span class="hint">preenchido automaticamente ao importar o relatório de entradas por CFOP (no quadro de Compras/despesas) — substitui a estimativa por alíquota. Só é usado se "Tem Incidência de ICMS" acima estiver marcado.</span>
-          </label>
-          <input type="text" inputmode="decimal" class="money" id="icmsCreditoReal_c3" value="0,00">
+          <div class="notice" style="margin-bottom:0;"><b>Crédito de ICMS — fórmula fixa.</b> O crédito de ICMS das compras é sempre calculado assim: (compras+despesas × % Presumido/Real) × alíquota de crédito acima + (compras+despesas × % Simples) × <b>2,95% fixo</b> (estimativa de mercado do ICMS embutido no DAS do fornecedor Simples — confirme com o contador se a alíquota real do seu caso for diferente). O valor de ICMS eventualmente importado de um PDF de entradas por CFOP <b>não é mais usado</b> neste cálculo.</div>
+          <input type="text" inputmode="decimal" class="money" id="icmsCreditoReal_c3" value="0,00" style="display:none;">
         </div>
         <div class="checkline" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
           <input type="checkbox" id="icmsManualCheck_c3">
@@ -1194,7 +1268,7 @@
         </div>
       </details>
 
-      <details class="acc" id="issFieldset_c3" style="display:none">
+      <details class="acc acc-iss" id="issFieldset_c3" style="display:none">
         <summary>
           <input type="checkbox" id="temIss_c3" checked onclick="event.stopPropagation()" style="margin-right:8px; vertical-align:middle;">
           <span onclick="document.getElementById('temIss_c3').click(); event.stopPropagation();">Tem Incidência de ISS (Real e Presumido)</span>
@@ -1216,7 +1290,7 @@
         </div>
       </details>
 
-      <details class="acc">
+      <details class="acc acc-folha">
         <summary>Folha de pagamento (INSS patronal, RAT/SAT e Terceiros — Real/Presumido)</summary>
         <span class="redutor-tag" id="folhaPeriodBadge_c3" style="display:inline-block; margin-bottom:8px;">—</span>
         <span class="hint">o Simples já embute tudo isso no DAS — esses campos só afetam Presumido/Real</span>
@@ -1252,7 +1326,7 @@
         </div>
       </details>
 
-      <details class="acc">
+      <details class="acc acc-compras">
         <summary>Compras/despesas e créditos de CBS/IBS</summary>
         <span class="redutor-tag" id="comprasPeriodBadge_c3" style="display:inline-block; margin-bottom:8px;">—</span>
         <span class="hint">"% crédito — Real/Presumido" e "% Simples" juntos somam sempre 100% em cada linha (se um sobe, o outro desce). No Simples DAS, o crédito repassado é (compras+despesas × % Simples) × "% do DAS estimado" — ex.: 100mil × 100% Simples × 2% do DAS = R$2.000. <b>Esse crédito depende das alíquotas de CBS/IBS estarem preenchidas</b> (abaixo, "CBS (%)"/"IBS (%)") — com elas zeradas, o crédito repassado sempre fica R$0,00, mesmo com Compras preenchidas.</span>
@@ -1325,7 +1399,7 @@
       </details>
 
 
-      <details class="acc">
+      <details class="acc acc-comparacao">
         <summary>Comparação com 2026 (valor já pago, referência)</summary>
         <label style="margin-top:0">Total pago em 2026</label>
         <span class="redutor-tag" id="pago2026PeriodBadge_c3" style="display:inline-block; margin-bottom:8px;">—</span>
@@ -1342,7 +1416,7 @@
           </div>
           <div>
             <label style="margin-top:0">IBS (%)</label>
-            <input type="number" id="ibsAliq_c3" value="18.5" step="0.01">
+            <input type="number" id="ibsAliq_c3" value="0" step="0.01">
           </div>
         </div>
       </fieldset>
@@ -1814,7 +1888,7 @@ const CNAE_LIST = [
 // Número da versão atual do app — atualizar aqui a cada nova versão publicada. Usado tanto no rótulo
 // visível na tela (pra conferir se o que está no ar bate com o que foi publicado no Git) quanto no
 // arquivo de backup exportado (campo "versaoApp"), sem precisar mudar em dois lugares separados.
-const VERSAO_APP = 'v343';
+const VERSAO_APP = 'v351';
 document.getElementById('versaoAppLabel').textContent = '· ' + VERSAO_APP;
 
 const ANEXOS = {
@@ -3083,6 +3157,13 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
   const creditoComprasFornecedorSimplesParaHibrido = (comprasAtual*pctSimplesComprasParaHibrido + despesasGeraisAtual*pctSimplesDespesasParaHibrido) * pctDasEstimadoParaHibrido;
   const cbsRateAtual = parseFloat(document.getElementById('cbsRate').value)||0;
   const ibsRateAtual = parseFloat(document.getElementById('ibsRate').value)||0;
+  // Crédito de transição do estoque (LC 214/2025): estoque × alíquota de CBS/IBS = crédito TOTAL,
+  // usado em 12 parcelas mensais iguais — SEMPRE dividido por 12, independente do número de meses no
+  // período calculado aqui (mesma regra do card único, agora também na tabela mensal/detalhada, que é
+  // o que realmente é usada sempre que há PDF ou projeção importados — o card único só aparece sem
+  // nenhum mês importado, então o crédito nunca era aplicado nos casos reais de uso).
+  const estoqueValorParaHibrido = Math.max(0, getMoney('estoqueValor'));
+  const creditoEstoqueMensalParaHibrido = (estoqueValorParaHibrido * (cbsRateAtual+ibsRateAtual)/100) / 12;
   const anexoAtual = ANEXOS[state.anexo];
   const periodoSTAtual = periodoSTCombinado(apuracaoMensalState);
 
@@ -3190,7 +3271,7 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
     const dasReduzido = totalAMes - parteSubstituida;
     const debitoCbsIbs = receitaMes * ((cbsRateAtual+ibsRateAtual)/100);
     const creditoCompras = creditoBaseAtual * ((cbsRateAtual+ibsRateAtual)/100) + creditoComprasFornecedorSimplesParaHibrido;
-    const liquidoCbsIbs = Math.max(0, debitoCbsIbs - creditoCompras);
+    const liquidoCbsIbs = Math.max(0, debitoCbsIbs - creditoCompras - creditoEstoqueMensalParaHibrido);
     const hibridoMes = dasReduzido + liquidoCbsIbs;
     return { mes: mes.mes, ano: mes.ano, receitaMes, rbt12Mes: rbt12DoMes, faixaMes: faixaLabel, aliqMes: aliqLabel!==undefined?aliqLabel:ultimaAliq,
       dasMes: totalAMes, hibridoMes, creditoA: parteSubstituida, creditoACbs: creditoCbsMes, creditoAIbs: creditoIbsMes, creditoB: debitoCbsIbs,
@@ -3955,6 +4036,32 @@ function calc(){
   document.getElementById('b_credito_estoque').textContent = '– ' + fmt(creditoEstoqueMensal);
   document.getElementById('b_total').textContent = fmt(totalB);
 
+  // Comparação com o valor já pago em 2026 — mesmo padrão já usado na Aba 2: mostra a diferença
+  // (calculado − pago) em cada cenário, só quando algo foi informado no campo de referência.
+  function mostrarDeltaAba1(rowId, spanId, atual, pagoValor, pagoRowId, pagoSpanId){
+    if (pagoValor > 0.5){
+      document.getElementById(pagoRowId).style.display = 'flex';
+      document.getElementById(pagoSpanId).textContent = fmt(pagoValor);
+      document.getElementById(rowId).style.display = 'flex';
+      const diff = atual - pagoValor;
+      const labelEl = document.getElementById(rowId).querySelector('span:first-child');
+      if (diff <= 0){
+        labelEl.textContent = '↳ Redução do Imposto a Pagar';
+        document.getElementById(spanId).innerHTML = '<span style="color:var(--credit)">– '+fmt(Math.abs(diff))+'</span>';
+      } else {
+        labelEl.textContent = '↳ Aumento do Imposto a Pagar';
+        document.getElementById(spanId).innerHTML = '<span style="color:var(--alert)">+ '+fmt(diff)+'</span>';
+      }
+    } else {
+      document.getElementById(pagoRowId).style.display = 'none';
+      document.getElementById(rowId).style.display = 'none';
+    }
+  }
+  const pago2026Atual = Math.max(0, getMoney('pago2026'));
+  mostrarDeltaAba1('a_vs2026_row','a_vs2026', totalA, pago2026Atual, 'a_pago2026_row','a_pago2026');
+  mostrarDeltaAba1('b_vs2026_row','b_vs2026', totalB, pago2026Atual, 'b_pago2026_row','b_pago2026');
+
+
   const maxBar = Math.max(totalA, totalB, creditoRepassadoDASAtual, creditoB, 1);
   document.getElementById('bar_a_val').textContent = fmt(totalA);
   document.getElementById('bar_b_val').textContent = fmt(totalB);
@@ -3990,7 +4097,7 @@ function calc(){
 ['pctIbs','pctCbs','cbsRate','ibsRate'].forEach(id=>{
   document.getElementById(id).addEventListener('input', calc);
 });
-initMoneyInputs(['rbt12','rba','fatMes','compras','despesasGerais','receitaST','icmsForaNormalCompras','estoqueValor'], calc);
+initMoneyInputs(['rbt12','rba','fatMes','compras','despesasGerais','receitaST','icmsForaNormalCompras','estoqueValor','pago2026'], calc);
 document.getElementById('icmsForaNormalCheck').addEventListener('change', calc);
 document.getElementById('icmsForaNormalAliq').addEventListener('input', calc);
 
@@ -4401,7 +4508,9 @@ document.getElementById('btnLimparAtividade').addEventListener('click', ()=>{
   apuracaoMensalState.periodoManual = false;
   Object.keys(multiAnexoImportC1).forEach(k=> delete multiAnexoImportC1[k]);
   Object.keys(multiAnexoSTC1).forEach(k=> delete multiAnexoSTC1[k]);
-  ['rbt12','rba','fatMes','receitaST','compras','despesasGerais'].forEach(id=>{
+  // Compras/despesas não entram aqui — são dados independentes da atividade/cliente (créditos de
+  // CBS/IBS informados à parte), e não devem ser apagados junto com "Limpar atividade".
+  ['rbt12','rba','fatMes','receitaST'].forEach(id=>{
     document.getElementById(id).value = '0,00';
   });
   document.getElementById('projecaoMesesLista').innerHTML = '';
@@ -4454,8 +4563,11 @@ document.getElementById('btnLimparAtividadeC3').addEventListener('click', ()=>{
   Object.keys(multiAnexoSTC3).forEach(k=> delete multiAnexoSTC3[k]);
   stateProjecaoC3 = null;
   document.getElementById('perguntaProjecaoC3').style.display = 'none';
+  // Compras/despesas, seus percentuais de crédito e "valor pago em 2026" NÃO entram nessa lista —
+  // são dados independentes da atividade/cliente escolhido (créditos de CBS/IBS/ICMS informados à
+  // parte), e só devem ser apagados pelo botão "Limpar importação" (compras) ou manualmente. Antes,
+  // "Limpar atividade" também zerava compras/despesas mesmo sem o usuário ter pedido isso.
   ['rbt12_c3','rba_c3','receita_c3','lucro_c3','fin_c3','folha_c3','prolabore_c3',
-   'comprasValor_c3','despesasValor_c3','pago2026_c3','receitaOutraLocacao_c3',
    'receitaTrimestral_c3','receitaSTTrimestral_c3','lucroTrimestral_c3','finTrimestral_c3',
    'trim1_c3','trim2_c3','trim3_c3','trim4_c3','lucroTrim1_c3','lucroTrim2_c3','lucroTrim3_c3','lucroTrim4_c3',
    'receitaSTTrim1_c3','receitaSTTrim2_c3','receitaSTTrim3_c3','receitaSTTrim4_c3',
@@ -4772,7 +4884,7 @@ function sincronizarComprasDespesasAba1ParaAba2(forcar){
     ['compras','comprasValor_c3'], ['despesasGerais','despesasValor_c3'],
     ['pctCreditoCompras','pctCreditoRPCompras_c3'], ['pctCreditoSimplesCompras','pctCreditoSimplesCompras_c3'],
     ['pctCreditoDespesas','pctCreditoRPDespesas_c3'], ['pctCreditoSimplesDespesas','pctCreditoSimplesDespesas_c3'],
-    ['pctDasEstimadoCompras','pctDasEstimadoCompras_c3']
+    ['pctDasEstimadoCompras','pctDasEstimadoCompras_c3'], ['estoqueValor','estoqueValor_c3']
   ];
   const aba2VaziaNessesCampos = getMoney('comprasValor_c3') <= 0 && getMoney('despesasValor_c3') <= 0;
   if (!forcar && !aba2VaziaNessesCampos) return; // não sobrescreve ajuste já feito na Aba 2
@@ -4866,8 +4978,17 @@ function aplicarAtividadeC3(k){
   // Aba 1 via state3.anexoIIITransporte, definido automaticamente pelo CNAE/CNPJ escolhido) — sem
   // essa checagem, a Aba 2 sempre marcava ISS pra "Serviços gerais", mesmo quando é transporte.
   const transporteComoICMS = k === 'servico' && state3.anexoIIITransporte;
-  document.getElementById('temIcms_c3').checked = (a.tributo === 'icms') || transporteComoICMS;
-  document.getElementById('temIss_c3').checked = (a.tributo === 'iss') && !transporteComoICMS;
+  // Olha TODAS as atividades ativas (não só "k", que é apenas a que acabou de ser marcada/desmarcada)
+  // pra decidir os checkboxes de ICMS/ISS — antes, aplicar "servico" sempre desmarcava ICMS mesmo com
+  // "comercio" ainda ativo junto (Comércio/Indústria + Serviços gerais simultâneos), e vice-versa:
+  // cada clique numa atividade "resetava" a incidência da outra que já estava ativa, mesmo sem o
+  // usuário ter desmarcado nada. Um pequeno "Set" com k incluso garante que a atividade recém-marcada
+  // conta mesmo antes do toggle terminar de atualizar stateAtividadesAtivasC3.
+  const atividadesConsideradas = new Set([...Array.from(stateAtividadesAtivasC3), k]);
+  const algumaTemIcms = Array.from(atividadesConsideradas).some(chave=> ATIVIDADES_C3[chave] && ATIVIDADES_C3[chave].tributo === 'icms') || transporteComoICMS;
+  const algumaTemIss = Array.from(atividadesConsideradas).some(chave=> ATIVIDADES_C3[chave] && ATIVIDADES_C3[chave].tributo === 'iss') && !(transporteComoICMS && atividadesConsideradas.size===1);
+  document.getElementById('temIcms_c3').checked = algumaTemIcms;
+  document.getElementById('temIss_c3').checked = algumaTemIss;
   // sugestão de RAT/SAT pela atividade — é uma aproximação (a tabela oficial é por CNAE específico,
   // Decreto 3.048/1999 Anexo V); confirme o grau de risco exato antes de fechar o cálculo
   if (a.ratPct !== undefined){
@@ -6546,12 +6667,19 @@ function calcComp3(){
 
   // ---- ICMS líquido (Real e Presumido) ----
   const icmsDebito = receitaTotalComLocacao * (icmsDebitoAliq/100);
-  // Se o crédito de ICMS real (importado do relatório de entradas por CFOP) estiver preenchido, usa
-  // ele diretamente — é muito mais preciso que a estimativa por alíquota, já que reflete o ICMS
-  // efetivamente pago em cada entrada, não uma média aplicada sobre o valor contábil. Só vale se
-  // "Tem Incidência de ICMS" estiver marcado — senão fica em 0, igual às alíquotas de débito/crédito.
-  const icmsCreditoDireto = temIcms ? (Math.max(0, getMoney('icmsCreditoReal_c3')) / escalaPeriodo) : 0;
-  const icmsCredito = icmsCreditoDireto > 0 ? icmsCreditoDireto : (icmsCompras * (icmsAliq/100));
+  // Fórmula revista: o crédito de ICMS tem DOIS componentes, como no CBS/IBS —
+  // 1) Compras/despesas de fornecedores do Real/Presumido: crédito pleno pela alíquota de crédito
+  //    informada (icmsAliq) — igual já era.
+  // 2) Compras/despesas de fornecedores do Simples Nacional: esses fornecedores não destacam ICMS
+  //    "normal" na nota, então usa uma alíquota FIXA de 2,95% sobre essa parcela (valor de mercado
+  //    aproximado do ICMS embutido no DAS do fornecedor Simples — SEM PRECISÃO OFICIAL, é uma
+  //    estimativa; sempre confirme com o contador se a alíquota real for diferente).
+  // O valor de ICMS que vinha do PDF de entradas por CFOP (icmsCreditoReal_c3) NÃO é mais usado
+  // aqui — o crédito agora vem sempre desta fórmula, calculada mês a mês sobre compras e despesas.
+  const creditoBaseSimplesICMS = comprasUnico*(pctCreditoSimplesCompras/100) + despesasUnico*(pctCreditoSimplesDespesas/100);
+  const ALIQUOTA_FIXA_ICMS_SIMPLES = 2.95; // fixo — avisar o usuário, não é uma alíquota oficial única
+  const icmsCreditoSimples = creditoBaseSimplesICMS * (ALIQUOTA_FIXA_ICMS_SIMPLES/100);
+  const icmsCredito = (icmsCompras * (icmsAliq/100)) + icmsCreditoSimples;
   const icmsSaldoCredor = Math.max(0, icmsCredito - icmsDebito);
   let icmsLiquido = Math.max(0, icmsDebito - icmsCredito);
   // "Deseja informar o valor do ICMS Devido mensal?" — se marcado, soma o que foi digitado mês a mês
@@ -6582,7 +6710,26 @@ function calcComp3(){
       issDebito = meses.reduce((s,m)=> s + (window.issManualPorMesC3[m.mes+'/'+m.ano]||0), 0) / escalaPeriodo;
     }
   } else {
-    issDebito = receitaTotalComLocacao * (issAliq/100);
+    // ISS incide só sobre a receita de SERVIÇOS — antes usava receitaTotalComLocacao inteira, que
+    // inclui a receita de Comércio/Indústria quando as duas atividades estão marcadas juntas (ex.:
+    // "Comércio/Indústria" + "Serviços gerais"), cobrando ISS até sobre a parte de vendas de mercadoria.
+    // Separa a parcela de serviços do mesmo jeito que "mostrarReceitaSeparadaC3" já faz.
+    const inputsAnexoISS = Array.from(document.querySelectorAll('#receitasPorAnexoWrap_c3 input[data-anexo]'));
+    const ANEXO_TIPO_ISS = { I:'comercio', II:'comercio', III:'servico', IV:'servico', V:'servico' };
+    let receitaServicoParaISS;
+    if (inputsAnexoISS.length >= 2){
+      // Campos por Anexo já vêm no valor do período (trimestre-calendário atual), não mensal-equivalente
+      let somaServico = 0;
+      inputsAnexoISS.forEach(inp=>{
+        if (ANEXO_TIPO_ISS[inp.dataset.anexo] === 'servico') somaServico += Math.max(0, paraNumeroBR(inp.value));
+      });
+      receitaServicoParaISS = somaServico / escalaPeriodo;
+    } else {
+      // Só uma atividade (ou nenhuma separação por Anexo importada): usa a receita total só se a
+      // atividade atual for de serviços — senão (só Comércio ativo) a base de ISS é zero.
+      receitaServicoParaISS = isComercioC3 ? 0 : receitaTotalComLocacao;
+    }
+    issDebito = receitaServicoParaISS * (issAliq/100);
   }
 
   // ---- Redutor CBS/IBS da atividade (percentual sobre a alíquota, art. 261) ----
@@ -7615,10 +7762,21 @@ function gerarRelatorioImpressao(){
     const das = document.getElementById('a_das')?.textContent || '—';
     const hib = document.getElementById('b_total')?.textContent || '—';
     const faixa = document.getElementById('faixaTag')?.textContent || '—';
+    // Comparação com 2026 — só entra no relatório quando o campo foi preenchido (linha visível na tela)
+    const das_pago2026Row = document.getElementById('a_pago2026_row');
+    const hib_pago2026Row = document.getElementById('b_pago2026_row');
+    const comparacao2026Html = (das_pago2026Row?.style.display !== 'none')
+      ? `
+      <div class="relatorio-secao-titulo">Comparação com o valor pago em 2026</div>
+      <div class="relatorio-linha"><span>Valor pago em 2026 (referência)</span><b>${document.getElementById('a_pago2026')?.textContent || '—'}</b></div>
+      <div class="relatorio-linha"><span>DAS (Cenário A) — diferença (calculado − pago)</span><b>${document.getElementById('a_vs2026')?.textContent || '—'}</b></div>
+      <div class="relatorio-linha"><span>Híbrido (Cenário B) — diferença (calculado − pago)</span><b>${hib_pago2026Row?.style.display !== 'none' ? (document.getElementById('b_vs2026')?.textContent || '—') : '—'}</b></div>`
+      : '';
     corpoHtml = `
       <div class="relatorio-linha"><span>Faixa</span><b>${faixa}</b></div>
       <div class="relatorio-linha"><span>DAS (Cenário A — integral)</span><b>${das}</b></div>
-      <div class="relatorio-linha"><span>Híbrido (Cenário B — CBS/IBS fora do DAS)</span><b>${hib}</b></div>`;
+      <div class="relatorio-linha"><span>Híbrido (Cenário B — CBS/IBS fora do DAS)</span><b>${hib}</b></div>
+      ${comparacao2026Html}`;
   }
 
   const html = `
