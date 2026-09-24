@@ -1011,14 +1011,25 @@
               </label>
               <input type="text" inputmode="decimal" class="money" id="receita_c3" value="0,00">
             </div>
-            <div>
-              <label style="margin-top:0">Lucro real do mês
-                <span class="hint">valor único, usado quando não há meses reais importados — ou como referência pro Anual</span>
+          </div>
+          <div style="margin-top:10px;">
+            <label style="margin-top:0">Lucro real do mês
+              <span class="hint">valor único, usado quando não há meses reais importados — ou como referência pro Anual</span>
+            </label>
+            <input type="text" inputmode="decimal" class="money" id="lucro_c3" value="0,00">
+            <label style="margin-top:8px; display:flex; align-items:center; gap:6px; font-weight:400;">
+              <input type="checkbox" id="lucroManualCheck_c3" style="width:auto;">
+              Informar o lucro real mês a mês
+            </label>
+            <div id="metodoApuracaoRealWrap_c3" style="display:none; margin-top:8px; padding:10px; border-radius:8px; background:var(--paper); border:1px solid var(--line);">
+              <label style="margin-top:0; font-size:12px;">Método de apuração do IRPJ/CSLL</label>
+              <label style="margin-top:4px; display:flex; align-items:center; gap:6px; font-weight:400; font-size:12.5px;">
+                <input type="radio" name="metodoApuracaoRealC3" id="metodoTrimestralC3" value="trimestral" checked style="width:auto;">
+                Trimestral
               </label>
-              <input type="text" inputmode="decimal" class="money" id="lucro_c3" value="0,00">
-              <label style="margin-top:8px; display:flex; align-items:center; gap:6px; font-weight:400;">
-                <input type="checkbox" id="lucroManualCheck_c3" style="width:auto;">
-                Informar o lucro real mês a mês
+              <label style="margin-top:4px; display:flex; align-items:center; gap:6px; font-weight:400; font-size:12.5px;">
+                <input type="radio" name="metodoApuracaoRealC3" id="metodoSuspensaoC3" value="suspensao" style="width:auto;">
+                Balanço de Suspensão
               </label>
             </div>
           </div>
@@ -1888,7 +1899,7 @@ const CNAE_LIST = [
 // Número da versão atual do app — atualizar aqui a cada nova versão publicada. Usado tanto no rótulo
 // visível na tela (pra conferir se o que está no ar bate com o que foi publicado no Git) quanto no
 // arquivo de backup exportado (campo "versaoApp"), sem precisar mudar em dois lugares separados.
-const VERSAO_APP = 'v351';
+const VERSAO_APP = 'v363';
 document.getElementById('versaoAppLabel').textContent = '· ' + VERSAO_APP;
 
 const ANEXOS = {
@@ -2453,6 +2464,73 @@ function parseReceitaPorMesNumerico(texto){
   return { meses, total: totalMatch ? totalMatch[1] : null };
 }
 function paraNumeroBR(v){ return parseFloat(String(v).replace(/\./g,'').replace(',','.'))||0; }
+// Avalia expressões aritméticas simples digitadas num campo (ex.: "100000-30000+5000" ou
+// "50000*1,1") — SEM usar eval() (parser recursivo próprio, só aceita dígitos/vírgula/ponto/+-*/()
+// e espaços, então não há risco de executar código arbitrário). Números usam vírgula decimal (padrão
+// BR); ponto dentro de um número é tratado como separador de milhar e ignorado, igual paraNumeroBR já
+// faz. Se a expressão não for puramente aritmética (tiver letra, ou for só um número normal), cai no
+// parse padrão (paraNumeroBR) sem tentar avaliar como expressão.
+function avaliarExpressaoOuNumero(texto){
+  const t = String(texto).trim();
+  if (!t) return 0;
+  // só tenta o parser de expressão se houver pelo menos um operador +,-,*,/ FORA da posição 0
+  // (um '-' inicial é só sinal de número negativo, não uma expressão) e parênteses
+  const temOperador = /[+*/]/.test(t) || /.-/.test(t); // '-' que não seja só o primeiro caractere
+  if (!temOperador) return paraNumeroBR(t);
+  let i = 0;
+  function pularEspacos(){ while (t[i] === ' ') i++; }
+  function lerNumero(){
+    pularEspacos();
+    let inicio = i;
+    if (t[i] === '-') i++;
+    while (i < t.length && /[0-9.,]/.test(t[i])) i++;
+    if (i === inicio || (i === inicio+1 && t[inicio] === '-')) throw new Error('numero invalido');
+    return paraNumeroBR(t.slice(inicio, i));
+  }
+  function lerFator(){
+    pularEspacos();
+    if (t[i] === '('){
+      i++;
+      const v = lerExpressao();
+      pularEspacos();
+      if (t[i] !== ')') throw new Error('parenteses nao fechados');
+      i++;
+      return v;
+    }
+    if (t[i] === '-'){ i++; return -lerFator(); }
+    return lerNumero();
+  }
+  function lerTermo(){
+    let v = lerFator();
+    pularEspacos();
+    while (t[i] === '*' || t[i] === '/'){
+      const op = t[i]; i++;
+      const prox = lerFator();
+      v = op === '*' ? v*prox : v/prox;
+      pularEspacos();
+    }
+    return v;
+  }
+  function lerExpressao(){
+    let v = lerTermo();
+    pularEspacos();
+    while (t[i] === '+' || t[i] === '-'){
+      const op = t[i]; i++;
+      const prox = lerTermo();
+      v = op === '+' ? v+prox : v-prox;
+      pularEspacos();
+    }
+    return v;
+  }
+  try {
+    const resultado = lerExpressao();
+    pularEspacos();
+    if (i !== t.length || !isFinite(resultado)) return paraNumeroBR(t); // sobrou lixo ou deu NaN/Infinity — não era uma expressão válida, trata como número normal
+    return resultado;
+  } catch(e){
+    return paraNumeroBR(t); // qualquer erro de parse — cai pro comportamento de sempre
+  }
+}
 
 // Apura mês a mês (DAS x Híbrido) usando o RBT12/Anexo já configurados no formulário (fixos para todos os meses do PDF)
 const apuracaoMensalState = { periodo: null, baseMeses: null, periodoST: null, pdfMeses: null, projecaoMeses: null, projecaoST: null, periodoManual: false };
@@ -3008,6 +3086,7 @@ function calcularProjecaoC3(){
   if (algumLucroInformado && !document.getElementById('lucroManualCheck_c3').checked){
     document.getElementById('lucroManualCheck_c3').checked = true;
     document.getElementById('lucroManualWrap_c3').style.display = 'block';
+    document.getElementById('metodoApuracaoRealWrap_c3').style.display = 'block';
   }
   if (Math.max(0, getMoney('rbt12_c3')) <= 0){
     perguntarDataInicioECalcularRBT12(meses, 'rbt12_c3');
@@ -5493,6 +5572,7 @@ function calcularPresumidoRealPorTrimestreC3(mesesOrdenados){
   const icmsManualAtivoLocal = document.getElementById('icmsManualCheck_c3').checked;
   const issManualAtivoLocal = document.getElementById('issManualCheck_c3').checked;
   const lucroManualAtivoLocal = document.getElementById('lucroManualCheck_c3').checked;
+  const metodoSuspensaoAtivo = lucroManualAtivoLocal && document.getElementById('metodoSuspensaoC3').checked;
   const ANEXO_TIPO_C3_LOCAL = { I:'comercio', II:'comercio', III:'servico', IV:'servico', V:'servico' };
   const isComercioAtualC3Local = ATIVIDADES_C3[stateAtividadeC3] && ATIVIDADES_C3[stateAtividadeC3].tributo === 'icms';
 
@@ -5504,9 +5584,22 @@ function calcularPresumidoRealPorTrimestreC3(mesesOrdenados){
     grupos[chave].receita += receitaTotalDoMesC3(m);
     grupos[chave].receitaST += (m.receitaST ? paraNumeroBR(m.receitaST) : 0);
   });
+  // Compensação de prejuízo fiscal entre trimestres — processa em ordem CRONOLÓGICA (não a ordem de
+  // inserção do objeto), porque o prejuízo de um trimestre só se aplica aos seguintes, nunca ao
+  // contrário. Só entra no modo Trimestral (não no Balanço de Suspensão, que já embute isso sozinho
+  // no próprio acumulado informado mês a mês).
+  const chavesCronologicas = Object.keys(grupos).sort((a,b)=>{
+    const [qa,ya] = a.split('-'); const [qb,yb] = b.split('-');
+    return ya!==yb ? ya-yb : qa-qb;
+  });
+  let prejuizoFiscalAcumulado = 0;
+  let acumuladoSuspensao = 0; // estado do Balanço de Suspensão — soma corrida dos deltas mensais, atravessa trimestres
+  let irpjDevidoAcumuladoSuspensao = 0; // "top-up": o que já ficou devido em meses anteriores, pra não cobrar de novo
+  let csllDevidoAcumuladoSuspensao = 0;
 
   const resultadoPorMes = {};
-  Object.entries(grupos).forEach(([chave, g])=>{
+  chavesCronologicas.forEach(chave=>{
+    const g = grupos[chave];
     const lucroQ = lucroManualAtivoLocal
       ? g.meses.reduce((s,chaveMes)=> s + (window.lucroManualPorMesC3[chaveMes]||0), 0)
       : getMoney('lucro_c3') * g.meses.length;
@@ -5534,17 +5627,81 @@ function calcularPresumidoRealPorTrimestreC3(mesesOrdenados){
     });
     const splitComercioServicoQ = (receitaComercioQ > 0.5 && receitaServicoQ > 0.5) ? {comercio: receitaComercioQ, servico: receitaServicoQ} : null;
 
-    const detalhe = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, lucroQ, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ);
-    const totalPresTrimestre = detalhe.pres.total;
-    const totalRealTrimestre = detalhe.real.total;
+    // Presumido não depende do lucro (usa % de presunção sobre a receita) — calcula uma vez com
+    // lucroQ=0, comum aos dois métodos (Trimestral e Balanço de Suspensão), já que só o Real muda.
+    const detalhePres = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, 0, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ);
+    const totalPresTrimestre = detalhePres.pres.total;
 
-    // distribui proporcional à receita de cada mês dentro do trimestre (a soma volta a dar o total do trimestre)
-    g.meses.forEach(chaveMes=>{
-      const mObj = mesesOrdenados.find(m=> (m.mes+'/'+m.ano)===chaveMes);
-      const receitaMes = mObj ? receitaTotalDoMesC3(mObj) : 0;
-      const proporcao = g.receita > 0 ? receitaMes/g.receita : 1/g.meses.length;
-      resultadoPorMes[chaveMes] = { totalPres: totalPresTrimestre*proporcao, totalReal: totalRealTrimestre*proporcao };
-    });
+    if (!metodoSuspensaoAtivo){
+      // Trimestral (padrão) — Real apurado por trimestre-calendário, igual o Presumido, mas com a
+      // BASE de cálculo do IRPJ/CSLL ajustada pela compensação de prejuízo fiscal (limitada a 30% do
+      // lucro do trimestre) — o valor de "lucroQ" informado/reportado continua o mesmo, só a base que
+      // entra na fórmula do imposto muda. Ex.: prejuízo de R$100mil no 1º tri, lucro de R$100mil no
+      // 2º tri → compensação = min(100mil, 30%×100mil) = 30mil → base tributável do 2º tri = 70mil.
+      let baseAjustadaReal;
+      if (lucroQ > 0){
+        const compensacao = Math.min(prejuizoFiscalAcumulado, lucroQ * 0.30);
+        baseAjustadaReal = lucroQ - compensacao;
+        prejuizoFiscalAcumulado -= compensacao;
+      } else {
+        baseAjustadaReal = 0; // trimestre com prejuízo não paga IRPJ/CSLL nele mesmo
+        prejuizoFiscalAcumulado += (-lucroQ); // o prejuízo do trimestre entra pro saldo a compensar depois
+      }
+      const detalhe = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, baseAjustadaReal, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ);
+      const totalRealTrimestre = detalhe.real.total;
+      g.meses.forEach(chaveMes=>{
+        const mObj = mesesOrdenados.find(m=> (m.mes+'/'+m.ano)===chaveMes);
+        const receitaMes = mObj ? receitaTotalDoMesC3(mObj) : 0;
+        const proporcao = g.receita > 0 ? receitaMes/g.receita : 1/g.meses.length;
+        resultadoPorMes[chaveMes] = { totalPres: totalPresTrimestre*proporcao, totalReal: totalRealTrimestre*proporcao };
+      });
+    } else {
+      // Balanço de Suspensão/Redução — cada mês informado em lucroManualPorMesC3 é o lucro/prejuízo
+      // ISOLADO daquele mês (não pré-acumulado pelo usuário). O sistema soma isso mês a mês pra saber
+      // o ACUMULADO real (janeiro até aqui): enquanto o acumulado continuar ≤ 0, não há IRPJ/CSLL
+      // (mesmo que o mês individual tenha dado lucro — ele está "pagando" o prejuízo anterior). No
+      // primeiro mês em que o acumulado vira positivo, e em todo mês seguinte com acumulado positivo,
+      // a BASE tributável do IRPJ/CSLL é o ACUMULADO (não o lucro isolado do mês).
+      //
+      // O "consumo" (ICMS/ISS/CBS/IBS/INSS/Terceiros) é calculado UMA VEZ pro trimestre inteiro (igual
+      // o Presumido já faz), não mês a mês isoladamente — calcular receita de 1 mês isolado contra o
+      // crédito de Compras/Despesas (que é um valor fixo "mensal-equivalente", igual em todo mês) pode
+      // fazer o crédito exceder o débito num mês de receita mais baixa, zerando o CBS/IBS daquele mês
+      // sem transportar o saldo credor pro mês seguinte — subestimando o total. Calculando pelo
+      // trimestre inteiro, esse desequilíbrio se resolve naturalmente dentro do próprio período.
+      const consumoQ = detalhePres.real.icms + detalhePres.real.iss + detalhePres.real.cbs + detalhePres.real.ibs + detalhePres.real.inss + detalhePres.real.terceiros;
+      g.meses.forEach(chaveMes=>{
+        const mObj = mesesOrdenados.find(m=> (m.mes+'/'+m.ano)===chaveMes);
+        if (!mObj) return;
+        const receitaMes = receitaTotalDoMesC3(mObj);
+        const deltaMes = window.lucroManualPorMesC3[chaveMes] || 0;
+        acumuladoSuspensao += deltaMes;
+        // A base tributável é o ACUMULADO em si (soma corrida desde janeiro), não o lucro isolado do
+        // mês — um mês de prejuízo acumulado nunca gera IRPJ/CSLL, mesmo com lucro isolado positivo
+        // naquele mês específico; ex.: jan prejuízo 100mil, fev lucro 50mil (acumulado -50mil, zero),
+        // mar lucro 60mil (acumulado +10mil) → IRPJ/CSLL incidem sobre os 10mil acumulados, não sobre
+        // os 60mil do mês isolado.
+        const baseMes = Math.max(0, acumuladoSuspensao);
+        const mesesDecorridos = ORDEM_MESES_PT.indexOf(mObj.mes) + 1; // Janeiro=1, Fevereiro=2, ...
+        const limiteAdicional = 20000 * mesesDecorridos;
+        // "Balanço de Suspensão/Redução" de verdade não recalcula o imposto do zero sobre o acumulado
+        // a cada mês — funciona como um "complemento": o valor TOTAL devido sobre o acumulado até
+        // aqui é comparado com o que já tinha ficado devido nos meses anteriores, e só a DIFERENÇA é
+        // cobrada neste mês. Sem isso, um mês sem lucro nenhum (delta=0) ainda cobrava o IRPJ/CSLL
+        // inteiro de novo, porque o acumulado continuava positivo e a fórmula recalculava tudo — ex.:
+        // julho com lucro zero cobrava o mesmo IRPJ de junho outra vez, dobrando o total do período.
+        const irpjTotalDevidoAteAqui = baseMes * 0.15 + Math.max(0, baseMes - limiteAdicional) * 0.10;
+        const csllTotalDevidoAteAqui = baseMes * 0.09;
+        const irpjMesPagar = Math.max(0, irpjTotalDevidoAteAqui - irpjDevidoAcumuladoSuspensao);
+        const csllMesPagar = Math.max(0, csllTotalDevidoAteAqui - csllDevidoAcumuladoSuspensao);
+        irpjDevidoAcumuladoSuspensao = irpjTotalDevidoAteAqui;
+        csllDevidoAcumuladoSuspensao = csllTotalDevidoAteAqui;
+        const proporcaoConsumo = g.receita > 0 ? receitaMes/g.receita : 1/g.meses.length;
+        const totalRealMes = irpjMesPagar + csllMesPagar + (consumoQ*proporcaoConsumo);
+        const proporcaoPres = g.receita > 0 ? receitaMes/g.receita : 1/g.meses.length;
+        resultadoPorMes[chaveMes] = { totalPres: totalPresTrimestre*proporcaoPres, totalReal: totalRealMes };
+      });
+    }
   });
 
   return resultadoPorMes;
@@ -5640,16 +5797,54 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
   if (opcoes.incluirPresumido || opcoes.incluirReal){
     const icmsManualAtivoLado = document.getElementById('icmsManualCheck_c3').checked;
     const issManualAtivoLado = document.getElementById('issManualCheck_c3').checked;
+    const lucroManualAtivoLado = document.getElementById('lucroManualCheck_c3').checked;
+    const metodoSuspensaoAtivoLado = lucroManualAtivoLado && document.getElementById('metodoSuspensaoC3').checked;
+    // Balanço de Suspensão precisa do acumulado MÊS A MÊS, calculado em ordem cronológica atravessando
+    // trimestres — essa visão (lado a lado) trabalha por grupo de trimestre, então pré-calcula aqui o
+    // acumulado de cada mês individual antes de agrupar, e depois, por trimestre, soma só a parte
+    // positiva do acumulado de cada mês dele (a mesma regra usada na visão "mês a mês": o acumulado
+    // decide se há imposto, e IRPJ/CSLL incidem sobre o próprio acumulado, não sobre o delta do mês).
+    const acumuladoPorMesLado = {};
+    let irpjDevidoAcumuladoLado = 0; // "top-up": o que já ficou devido em meses anteriores
+    let prejuizoFiscalAcumuladoLado = 0; // compensação de prejuízo fiscal (30%) do método Trimestral
+    let csllDevidoAcumuladoLado = 0;
+    if (metodoSuspensaoAtivoLado){
+      let acc = 0;
+      const mesesOrdenadosCron = [...mesesOrdenados].sort((a,b)=>{
+        if (a.ano !== b.ano) return Number(a.ano) - Number(b.ano);
+        return ORDEM_MESES_PT.indexOf(a.mes) - ORDEM_MESES_PT.indexOf(b.mes);
+      });
+      mesesOrdenadosCron.forEach(m=>{
+        acc += (window.lucroManualPorMesC3[m.mes+'/'+m.ano] || 0);
+        acumuladoPorMesLado[m.mes+'/'+m.ano] = acc;
+      });
+    }
     chaves.forEach(chave=>{
       const g = grupos[chave];
-      const lucroManualAtivoLado = document.getElementById('lucroManualCheck_c3').checked;
-      const lucroQ = lucroManualAtivoLado
+      const lucroQ = metodoSuspensaoAtivoLado
+        ? g.meses.reduce((s,chaveMes)=> s + Math.max(0, acumuladoPorMesLado[chaveMes]||0), 0)
+        : lucroManualAtivoLado
         ? g.meses.reduce((s,chaveMes)=> s + (window.lucroManualPorMesC3[chaveMes]||0), 0)
         // Sem "informar mês a mês": replica o valor único "Lucro real do mês" (mensal) pra cada mês
         // real desse trimestre — antes lia de "lucroTrim1_c3"/"lucroTrim2_c3" diretamente, que ficam
         // sempre vazios quando o usuário só preenche o campo único (o valor nunca chegava na tabela
         // detalhada, mesmo com meses reais importados).
         : getMoney('lucro_c3') * g.meses.length;
+      // Compensação de prejuízo fiscal (método Trimestral, não Suspensão — nesse já embutida no
+      // acumulado acima): prejuízo de um trimestre compensa até 30% do lucro do(s) trimestre(s)
+      // seguinte(s), limitado ao saldo de prejuízo ainda disponível. Faltava aqui — a visão detalhada
+      // (a que aparece por padrão) nunca tinha essa dedução, só a visão "Ver mês a mês" tinha.
+      let lucroQAjustado = lucroQ;
+      if (!metodoSuspensaoAtivoLado){
+        if (lucroQ > 0){
+          const compensacaoLado = Math.min(prejuizoFiscalAcumuladoLado, lucroQ * 0.30);
+          lucroQAjustado = lucroQ - compensacaoLado;
+          prejuizoFiscalAcumuladoLado -= compensacaoLado;
+        } else {
+          lucroQAjustado = 0;
+          prejuizoFiscalAcumuladoLado += (-lucroQ);
+        }
+      }
       // Sem meses reais preenchidos em "finTrim1-4_c3" (modo Anual manual), replica o valor único
       // "Receita financeira do mês" (fin_c3) pra cada mês real desse trimestre — mesmo padrão já
       // corrigido pro "lucro" (lucroQ acima): sem isso, o valor nunca chegava na tabela detalhada.
@@ -5688,7 +5883,37 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
         }
       });
       const splitComercioServicoQ = (receitaComercioQ > 0.5 && receitaServicoQ > 0.5) ? {comercio: receitaComercioQ, servico: receitaServicoQ} : null;
-      detalhePorTrimestre[chave] = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, lucroQ, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ);
+      detalhePorTrimestre[chave] = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, lucroQAjustado, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ);
+      if (metodoSuspensaoAtivoLado){
+        // calcularDetalhadoTrimestreEspecificoC3 aplica o limiar TRIMESTRAL do adicional (R$60.000)
+        // sobre o "lucroQ" já ajustado acima — mas o Balanço de Suspensão usa um limiar MENSAL
+        // acumulado (R$20.000 × meses decorridos), diferente por mês, então o IRPJ/CSLL de verdade
+        // precisa ser somado mês a mês aqui (cada um com seu próprio limiar), substituindo o que a
+        // função calculou com a regra trimestral errada pra esse método.
+        let irpjMesPagarSoma = 0, csllMesPagarSoma = 0;
+        g.meses.forEach(chaveMes=>{
+          const mObj = mesesOrdenados.find(m=> (m.mes+'/'+m.ano)===chaveMes);
+          if (!mObj) return;
+          const baseMes = Math.max(0, acumuladoPorMesLado[chaveMes] || 0);
+          const mesesDecorridos = ORDEM_MESES_PT.indexOf(mObj.mes) + 1;
+          const limiteAdicional = 20000 * mesesDecorridos;
+          // "Balanço de Suspensão/Redução" é um sistema de complemento ("top-up"): compara o total
+          // devido sobre o acumulado até aqui com o que já tinha ficado devido nos meses anteriores, e
+          // só cobra a DIFERENÇA neste mês — sem isso, um mês com acumulado positivo mas sem lucro
+          // novo (delta=0) recobrava o IRPJ/CSLL inteiro de novo, dobrando o total do período.
+          const irpjTotalDevidoAteAqui = baseMes * 0.15 + Math.max(0, baseMes - limiteAdicional) * 0.10;
+          const csllTotalDevidoAteAqui = baseMes * 0.09;
+          irpjMesPagarSoma += Math.max(0, irpjTotalDevidoAteAqui - irpjDevidoAcumuladoLado);
+          csllMesPagarSoma += Math.max(0, csllTotalDevidoAteAqui - csllDevidoAcumuladoLado);
+          irpjDevidoAcumuladoLado = irpjTotalDevidoAteAqui;
+          csllDevidoAcumuladoLado = csllTotalDevidoAteAqui;
+        });
+        const irpjBaseSoma = irpjMesPagarSoma, irpjAdcSoma = 0, csllSoma = csllMesPagarSoma;
+        const d = detalhePorTrimestre[chave].real;
+        const diffTotal = (irpjBaseSoma + irpjAdcSoma + csllSoma) - (d.irpjBase + d.irpjAdc + d.csllTotal);
+        d.irpjBase = irpjBaseSoma; d.irpjAdc = irpjAdcSoma; d.irpjTotal = irpjBaseSoma + irpjAdcSoma; d.csllTotal = csllSoma;
+        d.total += diffTotal;
+      }
     });
   }
 
@@ -7252,29 +7477,109 @@ function renderizarCamposManuaisPorMesC3(){
     const mesesReais = (typeof combinarPdfEProjecaoC3 === 'function' ? ordenarLinhaDoTempoPT(combinarPdfEProjecaoC3()) : []);
     const wrap = document.getElementById('lucroManualWrap_c3');
     if (mesesReais.length === 0){
-      wrap.innerHTML = '<div class="notice">Nenhum mês real importado ainda — importe receita (PDF ou projeção) no passo 2 antes de informar o lucro mês a mês.</div>';
+      wrap.innerHTML = '<div class="notice" style="font-size:12px; padding:8px;">Nenhum mês real importado ainda — importe receita (PDF ou projeção) no passo 2 antes de informar o lucro mês a mês.</div>';
     } else {
-      wrap.innerHTML = mesesReais.map(m=>{
+      const metodoTrimestralAtivo = document.getElementById('metodoTrimestralC3').checked;
+      // No método Trimestral, a coluna "Acumulado" mostra o TOTAL do trimestre-calendário (soma de
+      // jan+fev+mar, repetida nas 3 linhas daquele trimestre) — é essa soma, não um total corrido
+      // desde janeiro, que decide a base do IRPJ/CSLL nesse método. No Balanço de Suspensão, continua
+      // sendo o acumulado corrido (jan até o mês), que é o que decide a base nesse outro método.
+      const totalPorTrimestre = {};
+      if (metodoTrimestralAtivo){
+        mesesReais.forEach(m=>{
+          const q = Math.floor(ORDEM_MESES_PT.indexOf(m.mes)/3);
+          const chaveQ = q+'-'+m.ano;
+          totalPorTrimestre[chaveQ] = (totalPorTrimestre[chaveQ]||0) + (window.lucroManualPorMesC3[m.mes+'/'+m.ano]||0);
+        });
+      }
+      let acumuladoRender = 0;
+      const labelColuna3 = metodoTrimestralAtivo ? 'Total do trimestre' : 'Acumulado (jan até o mês)';
+      wrap.innerHTML = `<div class="row3-lucro" style="display:grid; grid-template-columns:1.1fr 0.9fr 0.9fr; gap:6px; margin-bottom:1px;">
+          <span></span>
+          <label style="margin-top:0; font-size:10px; color:var(--body); font-weight:400;">Lucro/prejuízo do mês</label>
+          <label style="margin-top:0; font-size:10px; color:var(--body); font-weight:400;">${labelColuna3}</label>
+        </div>` + mesesReais.map(m=>{
         const chave = m.mes+'/'+m.ano;
         const valorSalvo = window.lucroManualPorMesC3[chave];
+        const valorNumerico = valorSalvo!==undefined ? valorSalvo : 0;
         const valorTexto = valorSalvo!==undefined ? valorSalvo.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '0,00';
-        return `<div class="row2" style="margin-top:6px; align-items:center;">
-          <label style="margin-top:0; font-weight:400;">${chave}</label>
-          <input type="text" inputmode="decimal" class="money lucro-manual-mes" data-chave="${chave}" value="${valorTexto}">
+        let valorColuna3;
+        if (metodoTrimestralAtivo){
+          const q = Math.floor(ORDEM_MESES_PT.indexOf(m.mes)/3);
+          valorColuna3 = totalPorTrimestre[q+'-'+m.ano] || 0;
+        } else {
+          acumuladoRender += valorNumerico;
+          valorColuna3 = acumuladoRender;
+        }
+        const corAcum = valorColuna3 < 0 ? 'var(--alert)' : 'var(--credit)';
+        return `<div class="row3-lucro" style="display:grid; grid-template-columns:1.1fr 0.9fr 0.9fr; gap:6px; margin-top:3px; align-items:center;">
+          <label style="margin-top:0; font-weight:400; font-size:12px;">${chave}</label>
+          <input type="text" inputmode="decimal" class="money lucro-manual-mes" data-chave="${chave}" style="padding:4px 6px; font-size:12px;" value="${valorTexto}">
+          <span class="lucro-acumulado-mes" data-chave="${chave}" style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:${corAcum};">${fmtSinal(valorColuna3)}</span>
         </div>`;
       }).join('');
       wrap.querySelectorAll('.lucro-manual-mes').forEach(el=>{
         el.addEventListener('input', function(){
+          // Enquanto digita, só converte número puro (não tenta avaliar expressão ainda — "100+" no
+          // meio da digitação falharia). A expressão só é calculada de verdade no blur, abaixo.
           window.lucroManualPorMesC3[this.dataset.chave] = paraNumeroBR(this.value);
+          atualizarColunaAcumuladoLucroC3();
           calcComp3();
         });
         el.addEventListener('blur', function(){
-          const n = paraNumeroBR(this.value);
+          // Aceita "100000-30000+5000" ou "50000*1,1" digitado direto no campo — calcula e substitui
+          // pelo resultado final formatado, sem precisar de calculadora à parte.
+          const n = avaliarExpressaoOuNumero(this.value);
           this.value = n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+          window.lucroManualPorMesC3[this.dataset.chave] = n;
+          atualizarColunaAcumuladoLucroC3();
+          calcComp3();
         });
       });
     }
   }
+}
+// Formata um valor com sinal explícito (+/-), usado na coluna "Acumulado" — deixa claro de relance se
+// o acumulado até aquele mês está em prejuízo ou lucro, sem precisar olhar a cor.
+function fmtSinal(v){
+  const abs = Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return (v < 0 ? '– R$ ' : 'R$ ') + abs;
+}
+// Recalcula e atualiza só os textos da coluna "Acumulado" (sem re-renderizar as linhas inteiras) —
+// re-renderizar tudo a cada tecla digitada faria o campo perder o foco no meio da digitação.
+function atualizarColunaAcumuladoLucroC3(){
+  const wrap = document.getElementById('lucroManualWrap_c3');
+  if (!wrap) return;
+  const metodoTrimestralAtivo = document.getElementById('metodoTrimestralC3').checked;
+  if (metodoTrimestralAtivo){
+    // No método Trimestral a coluna muda de "acumulado corrido" pra "total do trimestre" — precisa
+    // saber a que trimestre-calendário cada linha pertence, então recalcula tudo com base nas chaves
+    // (MES/ANO) já presentes no DOM, sem precisar re-render as linhas inteiras.
+    const totalPorTrimestre = {};
+    const chaves = Array.from(wrap.querySelectorAll('.lucro-acumulado-mes')).map(s=>s.dataset.chave);
+    chaves.forEach(chave=>{
+      const [mesNome, ano] = chave.split('/');
+      const q = Math.floor(ORDEM_MESES_PT.indexOf(mesNome)/3);
+      const chaveQ = q+'-'+ano;
+      totalPorTrimestre[chaveQ] = (totalPorTrimestre[chaveQ]||0) + (window.lucroManualPorMesC3[chave]||0);
+    });
+    wrap.querySelectorAll('.lucro-acumulado-mes').forEach(span=>{
+      const chave = span.dataset.chave;
+      const [mesNome, ano] = chave.split('/');
+      const q = Math.floor(ORDEM_MESES_PT.indexOf(mesNome)/3);
+      const total = totalPorTrimestre[q+'-'+ano] || 0;
+      span.textContent = fmtSinal(total);
+      span.style.color = total < 0 ? 'var(--alert)' : 'var(--credit)';
+    });
+    return;
+  }
+  let acumulado = 0;
+  wrap.querySelectorAll('.lucro-acumulado-mes').forEach(span=>{
+    const chave = span.dataset.chave;
+    acumulado += (window.lucroManualPorMesC3[chave] || 0);
+    span.textContent = fmtSinal(acumulado);
+    span.style.color = acumulado < 0 ? 'var(--alert)' : 'var(--credit)';
+  });
 }
 document.getElementById('icmsManualCheck_c3').addEventListener('change', function(){
   document.getElementById('icmsManualWrap_c3').style.display = this.checked ? 'block' : 'none';
@@ -7289,9 +7594,14 @@ document.getElementById('issManualCheck_c3').addEventListener('change', function
 document.getElementById('lucroManualCheck_c3').addEventListener('change', function(){
   document.getElementById('lucroManualWrap_c3').style.display = this.checked ? 'block' : 'none';
   document.getElementById('btnLimparLucroMesC3').style.display = this.checked ? 'inline-block' : 'none';
+  document.getElementById('metodoApuracaoRealWrap_c3').style.display = this.checked ? 'block' : 'none';
   renderizarCamposManuaisPorMesC3();
   calcComp3();
 });
+document.querySelectorAll('input[name="metodoApuracaoRealC3"]').forEach(r=> r.addEventListener('change', function(){
+  renderizarCamposManuaisPorMesC3();
+  calcComp3();
+}));
 document.getElementById('btnLimparLucroMesC3').addEventListener('click', function(){
   // Zera todos os valores de lucro mês a mês já digitados — não desmarca o checkbox nem esconde o
   // painel, só limpa o conteúdo, pra facilitar recomeçar sem precisar apagar campo por campo.
@@ -8022,6 +8332,7 @@ function importarSimulacao(file){
       document.getElementById('issManualWrap_c3').style.display = document.getElementById('issManualCheck_c3').checked ? 'block' : 'none';
       document.getElementById('lucroManualWrap_c3').style.display = document.getElementById('lucroManualCheck_c3').checked ? 'block' : 'none';
       document.getElementById('btnLimparLucroMesC3').style.display = document.getElementById('lucroManualCheck_c3').checked ? 'inline-block' : 'none';
+      document.getElementById('metodoApuracaoRealWrap_c3').style.display = document.getElementById('lucroManualCheck_c3').checked ? 'block' : 'none';
       renderizarCamposManuaisPorMesC3();
       calcComp3();
       alert('Simulação carregada com sucesso.');
