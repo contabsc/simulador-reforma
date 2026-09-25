@@ -501,7 +501,9 @@
         <input type="text" id="clienteNome" placeholder="Preenchido pela busca de CNPJ" readonly style="background:var(--paper); cursor:not-allowed;">
       </div>
       <div>
-        <label style="margin-top:0">CNPJ</label>
+        <label style="margin-top:0">CNPJ
+          <span class="hint">preenchido junto com o nome, pela mesma busca</span>
+        </label>
         <input type="text" inputmode="numeric" id="clienteCnpj" placeholder="Preenchido pela busca de CNPJ" maxlength="18" readonly style="background:var(--paper); cursor:not-allowed;">
       </div>
     </div>
@@ -1046,6 +1048,11 @@
             <span class="hint">só para o Presumido — soma à base sem presunção</span>
           </label>
           <input type="text" inputmode="decimal" class="money" id="fin_c3" value="0,00">
+          <label style="margin-top:8px; display:flex; align-items:center; gap:6px; font-weight:400;">
+            <input type="checkbox" id="finManualCheck_c3" style="width:auto;">
+            Informar a receita financeira mês a mês
+          </label>
+          <div id="finManualWrap_c3" style="display:none; margin-top:8px;"></div>
         </div>
 
         <div class="row2" style="margin-top:10px;">
@@ -1899,7 +1906,7 @@ const CNAE_LIST = [
 // Número da versão atual do app — atualizar aqui a cada nova versão publicada. Usado tanto no rótulo
 // visível na tela (pra conferir se o que está no ar bate com o que foi publicado no Git) quanto no
 // arquivo de backup exportado (campo "versaoApp"), sem precisar mudar em dois lugares separados.
-const VERSAO_APP = 'v363';
+const VERSAO_APP = 'v368';
 document.getElementById('versaoAppLabel').textContent = '· ' + VERSAO_APP;
 
 const ANEXOS = {
@@ -5505,7 +5512,7 @@ function buildReceitasPorAnexoC3(){
 // trimestre específico — em vez de duplicar a lógica de crédito de CBS/IBS/ICMS (que é complexa e já
 // está validada nos quadros), troca temporariamente os campos de entrada, deixa o calcComp3 calcular
 // normalmente, lê o resultado detalhado e desfaz a troca. Garante que bate exatamente com os quadros.
-function calcularDetalhadoTrimestreEspecificoC3(receitaQ, receitaSTQ, lucroQ, finQ, icmsManualQ, issManualQ, trimestreEspecifico, splitComercioServicoQ){
+function calcularDetalhadoTrimestreEspecificoC3(receitaQ, receitaSTQ, lucroQ, finQ, icmsManualQ, issManualQ, trimestreEspecifico, splitComercioServicoQ, numMesesReal){
   const paraTextoLocal = n => n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
   const campos = ['receitaTrimestral_c3','receitaSTTrimestral_c3','lucroTrimestral_c3','finTrimestral_c3'];
   const salvo = { modo: statePeriodicidadeC3 };
@@ -5530,6 +5537,12 @@ function calcularDetalhadoTrimestreEspecificoC3(receitaQ, receitaSTQ, lucroQ, fi
   // campos "receitasPorAnexoWrap_c3" (só preenchidos com o ÚLTIMO trimestre-calendário com dados),
   // aplicando ERRADAMENTE a MESMA % em TODAS as colunas da visão lado a lado.
   if (splitComercioServicoQ) window.splitComercioServicoAtualC3 = splitComercioServicoQ;
+  // Nº real de meses DESSE grupo — "escalaPeriodo" dentro de calcComp3() é sempre 3 (fixo) quando
+  // statePeriodicidadeC3='trimestral', mesmo que esse trimestre-calendário específico só tenha 1 ou 2
+  // meses reais importados (ex.: um trimestre parcial, com só o primeiro mês disponível). Sem passar
+  // o valor real aqui, folha/pró-labore (que são sempre mensais, fixos) seriam multiplicados por 3
+  // mesmo quando o período real é menor, inflando o resultado.
+  window.numMesesRealAtualC3 = numMesesReal || 3;
   dentroDeCalculoDetalhadoC3 = true;
   calcComp3();
   dentroDeCalculoDetalhadoC3 = false;
@@ -5537,6 +5550,7 @@ function calcularDetalhadoTrimestreEspecificoC3(receitaQ, receitaSTQ, lucroQ, fi
   delete window.issManualOverrideAtualC3;
   delete window.trimestreEspecificoAtualC3;
   delete window.splitComercioServicoAtualC3;
+  delete window.numMesesRealAtualC3;
 
   const lerTexto = id => { const el = document.getElementById(id); return el ? paraNumeroBR(el.textContent.replace(/[^0-9,.-]/g,'')) : 0; };
   const resultado = {
@@ -5604,7 +5618,10 @@ function calcularPresumidoRealPorTrimestreC3(mesesOrdenados){
       ? g.meses.reduce((s,chaveMes)=> s + (window.lucroManualPorMesC3[chaveMes]||0), 0)
       : getMoney('lucro_c3') * g.meses.length;
     const finTrimPreenchido = getMoney('finTrim'+g.q+'_c3') > 0;
-    const finQ = finTrimPreenchido ? Math.max(0, getMoney('finTrim'+g.q+'_c3')) : Math.max(0, getMoney('fin_c3')) * g.meses.length;
+    const finManualAtivoLocal = document.getElementById('finManualCheck_c3').checked;
+    const finQ = finManualAtivoLocal
+      ? g.meses.reduce((s,chaveMes)=> s + Math.max(0, window.finManualPorMesC3[chaveMes]||0), 0)
+      : finTrimPreenchido ? Math.max(0, getMoney('finTrim'+g.q+'_c3')) : Math.max(0, getMoney('fin_c3')) * g.meses.length;
     const icmsManualQ = icmsManualAtivoLocal
       ? g.meses.reduce((s,chaveMes)=> s + (window.icmsManualPorMesC3[chaveMes]||0), 0)
       : undefined;
@@ -5629,7 +5646,7 @@ function calcularPresumidoRealPorTrimestreC3(mesesOrdenados){
 
     // Presumido não depende do lucro (usa % de presunção sobre a receita) — calcula uma vez com
     // lucroQ=0, comum aos dois métodos (Trimestral e Balanço de Suspensão), já que só o Real muda.
-    const detalhePres = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, 0, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ);
+    const detalhePres = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, 0, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ, g.meses.length);
     const totalPresTrimestre = detalhePres.pres.total;
 
     if (!metodoSuspensaoAtivo){
@@ -5647,7 +5664,7 @@ function calcularPresumidoRealPorTrimestreC3(mesesOrdenados){
         baseAjustadaReal = 0; // trimestre com prejuízo não paga IRPJ/CSLL nele mesmo
         prejuizoFiscalAcumulado += (-lucroQ); // o prejuízo do trimestre entra pro saldo a compensar depois
       }
-      const detalhe = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, baseAjustadaReal, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ);
+      const detalhe = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, baseAjustadaReal, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ, g.meses.length);
       const totalRealTrimestre = detalhe.real.total;
       g.meses.forEach(chaveMes=>{
         const mObj = mesesOrdenados.find(m=> (m.mes+'/'+m.ano)===chaveMes);
@@ -5849,7 +5866,10 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
       // "Receita financeira do mês" (fin_c3) pra cada mês real desse trimestre — mesmo padrão já
       // corrigido pro "lucro" (lucroQ acima): sem isso, o valor nunca chegava na tabela detalhada.
       const finTrimPreenchido = getMoney('finTrim'+g.q+'_c3') > 0;
-      const finQ = finTrimPreenchido ? Math.max(0, getMoney('finTrim'+g.q+'_c3')) : Math.max(0, getMoney('fin_c3')) * g.meses.length;
+      const finManualAtivoLocal = document.getElementById('finManualCheck_c3').checked;
+    const finQ = finManualAtivoLocal
+      ? g.meses.reduce((s,chaveMes)=> s + Math.max(0, window.finManualPorMesC3[chaveMes]||0), 0)
+      : finTrimPreenchido ? Math.max(0, getMoney('finTrim'+g.q+'_c3')) : Math.max(0, getMoney('fin_c3')) * g.meses.length;
       // Soma o ICMS/ISS informado mês a mês pros meses REALMENTE dentro desse trimestre — sem isso,
       // cada coluna acabaria repetindo a soma de TODOS os meses carregados, não só os do trimestre.
       // g.meses guarda strings "MES/ANO"; usa direto pro ICMS, e filtra mesesOrdenados (que tem os
@@ -5883,7 +5903,7 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
         }
       });
       const splitComercioServicoQ = (receitaComercioQ > 0.5 && receitaServicoQ > 0.5) ? {comercio: receitaComercioQ, servico: receitaServicoQ} : null;
-      detalhePorTrimestre[chave] = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, lucroQAjustado, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ);
+      detalhePorTrimestre[chave] = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, lucroQAjustado, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ, g.meses.length);
       if (metodoSuspensaoAtivoLado){
         // calcularDetalhadoTrimestreEspecificoC3 aplica o limiar TRIMESTRAL do adicional (R$60.000)
         // sobre o "lucroQ" já ajustado acima — mas o Balanço de Suspensão usa um limiar MENSAL
@@ -5941,6 +5961,27 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
       <span>${fmt(total)}</span>
     </div>`;
   };
+  // Variante de linhaHtml pras linhas "Valor pago"/"diferença" — só fazem sentido pro TOTAL do
+  // período (o "valor pago" é uma referência única, não por trimestre), então as colunas de cada
+  // trimestre ficam vazias e só a última coluna ("Total geral") mostra o valor.
+  const linhaHtmlSoTotal = (label, valorTotal, corTexto)=>{
+    return `<div class="linha-multi" style="grid-template-columns:${gridCols}; font-size:12px;">
+      <span>${label}</span>
+      ${chaves.map(()=>`<span></span>`).join('')}
+      <span${corTexto ? ` style="color:${corTexto}"` : ''}>${valorTotal}</span>
+    </div>`;
+  };
+  // Comparação com o valor pago em 2026 (mesmo campo "pago2026_c3" já usado no card único e na
+  // visão "mês a mês") — calculado uma vez aqui, usado dentro de cada quadro de regime abaixo.
+  const pago2026TotalGeralLado = Math.max(0, getMoney('pago2026_c3'));
+  const linhasComparacaoQuadro = (totalRegime)=>{
+    if (pago2026TotalGeralLado <= 0.5) return '';
+    const diff = totalRegime - pago2026TotalGeralLado;
+    const cor = diff <= 0 ? 'var(--credit)' : 'var(--alert)';
+    const sinal = diff <= 0 ? '– ' : '+ ';
+    return linhaHtmlSoTotal('Valor pago (referência)', fmt(pago2026TotalGeralLado))
+      + linhaHtmlSoTotal('↳ Aumento/Redução do imposto a pagar', sinal+fmt(Math.abs(diff)), cor);
+  };
 
   let html = '<div class="cards" style="grid-template-columns:1fr;">';
 
@@ -5957,6 +5998,7 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
       ${linhaHtml('↳ substituído por CBS', c=>grupos[c].creditoACbs)}
       ${linhaHtml('↳ substituído por IBS', c=>grupos[c].creditoAIbs)}
       ${linhaHtml('Total DAS', c=>grupos[c].das, {total:true})}
+      ${linhasComparacaoQuadro(chaves.reduce((s,c)=>s+grupos[c].das,0))}
       ${chaves.some(c=>grupos[c].creditoRepassadoDAS>0.5) ? linhaHtml('↳ crédito repassado ao comprador (PIS/COFINS/ICMS-ISS embutidos no DAS)', c=>grupos[c].creditoRepassadoDAS) : ''}
       ${chaves.some(c=>grupos[c].creditoComprasFornecedorSimples>0.5) ? `<div style="font-size:12px;">${linhaHtml('↳ crédito nas compras de fornecedores do Simples', c=>grupos[c].creditoComprasFornecedorSimples)}</div>` : ''}
       ${temIpiAtivoC3 ? linhaHtml(`↳ do qual, IPI (${pctIpiAtualC3.toFixed(2)}% do DAS — Anexo II)`, c=>grupos[c].das*(pctIpiAtualC3/100)) : ''}
@@ -5974,6 +6016,7 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
       ${linhaHtml('Débito CBS/IBS sobre a venda', c=>grupos[c].debitoCbsIbs)}
       ${linhaHtml('(–) Crédito CBS/IBS sobre compras/despesas', c=>-grupos[c].creditoCompras)}
       ${linhaHtml('Total Híbrido', c=>grupos[c].hib, {total:true})}
+      ${linhasComparacaoQuadro(chaves.reduce((s,c)=>s+grupos[c].hib,0))}
       ${chaves.some(c=>grupos[c].creditoRepassadoHibrido>0.5) ? linhaHtml('↳ crédito repassado ao comprador', c=>grupos[c].creditoRepassadoHibrido) : ''}
     </div>`;
   }
@@ -5998,6 +6041,7 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
       ${linhaHtml('INSS patronal', c=>detalhePorTrimestre[c].pres.inss)}
       ${linhaHtml('Terceiros (Sistema S) + RAT/SAT', c=>detalhePorTrimestre[c].pres.terceiros)}
       ${linhaHtml('Total Presumido', c=>detalhePorTrimestre[c].pres.total, {total:true})}
+      ${linhasComparacaoQuadro(chaves.reduce((s,c)=>s+detalhePorTrimestre[c].pres.total,0))}
     </div>`;
   }
   if (opcoes.incluirReal){
@@ -6015,6 +6059,7 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
       ${linhaHtml('INSS patronal', c=>detalhePorTrimestre[c].real.inss)}
       ${linhaHtml('Terceiros (Sistema S) + RAT/SAT', c=>detalhePorTrimestre[c].real.terceiros)}
       ${linhaHtml('Total Real', c=>detalhePorTrimestre[c].real.total, {total:true})}
+      ${linhasComparacaoQuadro(chaves.reduce((s,c)=>s+detalhePorTrimestre[c].real.total,0))}
     </div>`;
   }
   html += '</div>';
@@ -6036,8 +6081,8 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
     const mesNum = m => String(ORDEM_MESES_PT.indexOf(m)+1).padStart(2,'0');
     const primeiro = mesesOrdenados[0], ultimo = mesesOrdenados[mesesOrdenados.length-1];
     const periodoLabel = `${mesNum(primeiro.mes)}/${primeiro.ano} a ${mesNum(ultimo.mes)}/${ultimo.ano}`;
-    const vereditoTotalHtml = `Nesta simulação, considerando o <b>total geral de ${periodoLabel}</b> (${chaves.length} trimestres), <span style="font-weight:700; font-size:1.15em;">${vencedorGeral}</span> tem a menor carga (${fmt(menorGeral)}). ${resumoGeral}.`;
-    html += `<div class="notice" style="margin-top:10px;">${vereditoTotalHtml}</div>`;
+    const vereditoTotalHtml = `Nesta simulação, considerando o <b>total geral de ${periodoLabel}</b> (${chaves.length} trimestres), <span style="font-weight:700; font-size:1.15em;">${vencedorGeral} tem a menor carga (${fmt(menorGeral)})</span>. ${resumoGeral}.`;
+    html += `<h3 style="margin:18px 0 6px;">Resultado da Avaliação Tributária:</h3><div class="notice" style="margin-top:10px;">${vereditoTotalHtml}</div>`;
     // Atualiza também o quadro fixo "Resultado da Avaliação Tributária" (fora da tabela, sempre
     // visível na tela) — sem isso, ele continuava mostrando o veredito do último trimestre isolado
     // (do cálculo interno do card único), mesmo com a tabela lado a lado já mostrando o total certo.
@@ -6061,9 +6106,9 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
     }
   });
   const receitaSeparadaElLado = document.getElementById('receitaSeparadaC3');
-  if (receitaSeparadaElLado && (receitaComercioGeral > 0.5 || receitaServicoGeral > 0.5)){
-    receitaSeparadaElLado.style.display = 'block';
-    receitaSeparadaElLado.innerHTML = `<b>Receita do período:</b> Comércio/Indústria: ${fmt(receitaComercioGeral)} · Serviços: ${fmt(receitaServicoGeral)} · Total: ${fmt(receitaComercioGeral+receitaServicoGeral)}`;
+  if (receitaSeparadaElLado) receitaSeparadaElLado.style.display = 'none'; // some só na tabela agora, não duplica abaixo
+  if (receitaComercioGeral > 0.5 || receitaServicoGeral > 0.5){
+    html += `<div class="notice" style="margin-top:12px; margin-bottom:0;"><b>Receita do período:</b> Comércio/Indústria: ${fmt(receitaComercioGeral)} · Serviços: ${fmt(receitaServicoGeral)} · <b>Total: ${fmt(receitaComercioGeral+receitaServicoGeral)}</b></div>`;
   }
   // Atualiza o gráfico com os componentes SOMADOS de todos os trimestres — mesmo motivo do veredito
   // e da receita separada: sem isso, o gráfico ficava com os dados do último trimestre calculado
@@ -6184,7 +6229,29 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
         ? `<td style="text-align:right; padding:6px;">${fmt(receitaComercioTotal)}</td><td style="text-align:right; padding:6px;">${fmt(receitaServicoTotal)}</td>`
         : `<td style="text-align:right; padding:6px;">${fmt(receitaTotal)}</td>`}
       ${colunas.map(c=>`<td style="text-align:right; padding:6px;">${fmt(totais[c.key])}</td>`).join('')}
-    </tr></tbody></table>`;
+    </tr>`;
+  // Comparação com o valor pago (campo "pago2026_c3") — direto na própria tabela, alinhada por
+  // coluna com o total de cada regime, em vez de um bloco separado abaixo da tabela.
+  const pago2026TotalGeral = Math.max(0, getMoney('pago2026_c3'));
+  if (pago2026TotalGeral > 0.5){
+    const colspanReceita = mostrarSplitComercioServico ? 2 : 1;
+    html += `<tr style="font-size:12px; color:var(--body);">
+        <td style="padding:4px 6px;">Valor pago (referência)</td>
+        <td colspan="${colspanReceita}"></td>
+        ${colunas.map(()=>`<td style="text-align:right; padding:4px 6px;">${fmt(pago2026TotalGeral)}</td>`).join('')}
+      </tr>
+      <tr style="font-size:12px;">
+        <td style="padding:4px 6px;">↳ Aumento/Redução do imposto a pagar</td>
+        <td colspan="${colspanReceita}"></td>
+        ${colunas.map(c=>{
+          const diff = totais[c.key] - pago2026TotalGeral;
+          const cor = diff <= 0 ? 'var(--credit)' : 'var(--alert)';
+          const sinal = diff <= 0 ? '– ' : '+ ';
+          return `<td style="text-align:right; padding:4px 6px; color:${cor};">${sinal}${fmt(Math.abs(diff))}</td>`;
+        }).join('')}
+      </tr>`;
+  }
+  html += `</tbody></table>`;
 
   // "Crédito repassado ao comprador" (DAS): é o PIS/COFINS (→CBS) e ICMS/ISS (→IBS) já embutidos no
   // próprio DAS pago no período (totalCreditoACbsIbs, calculado abaixo linha a linha pela % de
@@ -6241,14 +6308,19 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
   }
 
   if (opcoes.incluirPresumido || opcoes.incluirReal){
-    html += `<p class="hint" style="margin-top:8px;">Presumido/Real são calculados por trimestre-calendário (limite de R$60.000, LC224/2025) e distribuídos entre os meses dele proporcionalmente à receita — a soma bate com os modos Trimestral/Semestral/Anual. A perna Real usa a mesma % de presunção configurada como base do lucro, já que não há "lucro real" informado mês a mês.</p>`;
+    if (receitaComercioTotal > 0.5 || receitaServicoTotal > 0.5 || receitaTotal > 0.5){
+      const receitaPeriodoTxt = mostrarSplitComercioServico
+        ? `Comércio/Indústria: ${fmt(receitaComercioTotal)} · Serviços: ${fmt(receitaServicoTotal)} · <b>Total: ${fmt(receitaComercioTotal+receitaServicoTotal)}</b>`
+        : `<b>Total: ${fmt(receitaTotal)}</b>`;
+      html += `<div class="notice" style="margin-top:12px; margin-bottom:0;"><b>Receita do período:</b> ${receitaPeriodoTxt}</div>`;
+    }
     html += `<button type="button" class="pdf-valor-btn" id="btnMemoriaCalculoC3" style="margin-top:8px;">📋 Ver memória de cálculo do Presumido/Real</button>
       <div id="memoriaCalculoC3Wrap" style="display:none; margin-top:10px;"></div>`;
   }
 
+  const nomesRegimes = { das:'Simples DAS', hib:'Simples Híbrido', pres:'Lucro Presumido', real:'Lucro Real' };
   // Veredito com base no TOTAL GERAL (soma de todos os meses mostrados) — mesmo critério do card
   // único, só que aplicado à soma completa do período importado, não a um mês isolado.
-  const nomesRegimes = { das:'Simples DAS', hib:'Simples Híbrido', pres:'Lucro Presumido', real:'Lucro Real' };
   const regimesGerais = colunas.map(c=>({ nome: nomesRegimes[c.key], total: totais[c.key] }));
   if (regimesGerais.length > 1){
     const menorGeral = Math.min(...regimesGerais.map(r=>r.total));
@@ -6259,8 +6331,8 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
     const mesNum = m => String(ORDEM_MESES_PT.indexOf(m)+1).padStart(2,'0');
     const primeiro = mesesOrdenados[0], ultimo = mesesOrdenados[mesesOrdenados.length-1];
     const periodoLabel = `${mesNum(primeiro.mes)}/${primeiro.ano} a ${mesNum(ultimo.mes)}/${ultimo.ano}`;
-    const vereditoTotalHtml = `Nesta simulação, considerando o <b>total geral de ${periodoLabel}</b> (${mesesOrdenados.length} meses), <span style="font-weight:700; font-size:1.15em;">${vencedorGeral}</span> tem a menor carga (${fmt(menorGeral)}). ${resumoGeral}.`;
-    html += `<div class="notice" style="margin-top:10px;">${vereditoTotalHtml}</div>`;
+    const vereditoTotalHtml = `Nesta simulação, considerando o <b>total geral de ${periodoLabel}</b> (${mesesOrdenados.length} meses), <span style="font-weight:700; font-size:1.15em;">${vencedorGeral} tem a menor carga (${fmt(menorGeral)})</span>. ${resumoGeral}.`;
+    html += `<h3 style="margin:18px 0 6px;">Resultado da Avaliação Tributária:</h3><div class="notice" style="margin-top:10px;">${vereditoTotalHtml}</div>`;
     // Idem à visão Trimestral lado a lado: atualiza o quadro fixo "Resultado da Avaliação
     // Tributária" (sempre visível, fora dessa tabela) com o mesmo veredito somado.
     const verdictFixo = document.getElementById('verdictComp3');
@@ -6270,10 +6342,7 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
   // topo da tela) com a soma de TODOS os meses mostrados — sem isso, ele ficava com o valor do
   // último mês/trimestre calculado internamente, igual ao bug já corrigido no veredito.
   const receitaSeparadaElMensal = document.getElementById('receitaSeparadaC3');
-  if (receitaSeparadaElMensal && (receitaComercioTotal > 0.5 || receitaServicoTotal > 0.5)){
-    receitaSeparadaElMensal.style.display = 'block';
-    receitaSeparadaElMensal.innerHTML = `<b>Receita do período:</b> Comércio/Indústria: ${fmt(receitaComercioTotal)} · Serviços: ${fmt(receitaServicoTotal)} · Total: ${fmt(receitaComercioTotal+receitaServicoTotal)}`;
-  }
+  if (receitaSeparadaElMensal) receitaSeparadaElMensal.style.display = 'none'; // some só na tabela agora, não duplica abaixo
   // Atualiza o gráfico com os totais de cada regime somados nos meses mostrados — essa visão não
   // rastreia os impostos individuais por mês (só o total do regime), então o gráfico aqui mostra o
   // total inteiro na primeira barra, sem quebrar em ICMS/ISS/CBS/IBS/INSS como na visão Trimestral.
@@ -6580,8 +6649,14 @@ function calcComp3(){
   }
   const presIrpjPct = presuncaoPonderada ? presuncaoPonderada.irpj : (parseFloat(document.getElementById('presIrpj_c3').value)||0);
   const presCsllPct = presuncaoPonderada ? presuncaoPonderada.csll : (parseFloat(document.getElementById('presCsll_c3').value)||0);
-  const folha = Math.max(0, getMoney('folha_c3')) / escalaPeriodo;
-  const prolabore = Math.max(0, getMoney('prolabore_c3')) / escalaPeriodo;
+  // Folha/pró-labore são sempre valores MENSAIS fixos digitados pelo usuário — multiplicados pelo nº
+  // real de meses do período em apuração (não pelo "escalaPeriodo" fixo em 3/12, que superestimaria
+  // um trimestre-calendário parcial, com só 1 ou 2 meses reais importados). numMesesRealAtualC3 (visão
+  // detalhada/mês-a-mês) tem o número real; sem ele (card único normal), cai no escalaPeriodo mesmo,
+  // mantendo o comportamento de sempre pra quem não usa apuração por período importado.
+  const numMesesFolha = window.numMesesRealAtualC3 || escalaPeriodo;
+  const folha = Math.max(0, getMoney('folha_c3')) * numMesesFolha / escalaPeriodo;
+  const prolabore = Math.max(0, getMoney('prolabore_c3')) * numMesesFolha / escalaPeriodo;
   const terceirosPct = parseFloat(document.getElementById('terceirosPct_c3').value)||0;
   // Olha TODAS as atividades marcadas (não só a "principal") — se qualquer uma tiver ICMS, mostra o
   // quadro de ICMS; se qualquer uma tiver ISS, mostra o de ISS; puder mostrar os dois ao mesmo tempo
@@ -6621,7 +6696,7 @@ function calcComp3(){
     if (receitaComercio <= 0.5 && receitaServico <= 0.5){ elDiv.style.display = 'none'; return; }
     const formatar = jaEscalado ? fmt : fmtP;
     elDiv.style.display = 'block';
-    elDiv.innerHTML = `<b>Receita do período:</b> Comércio/Indústria: ${formatar(receitaComercio)} · Serviços: ${formatar(receitaServico)} · Total: ${formatar(receitaComercio+receitaServico)}`;
+    elDiv.innerHTML = `<b>Receita do período:</b> Comércio/Indústria: ${formatar(receitaComercio)} · Serviços: ${formatar(receitaServico)} · <b>Total: ${formatar(receitaComercio+receitaServico)}</b>`;
   })();
   // RBT12/RBA e o passo "1. Importar RBT12 de um PDF" só fazem sentido quando algum regime do Simples
   // Nacional (DAS ou Híbrido) está marcado — pro Presumido/Real, nenhum dos dois é usado (o cálculo
@@ -7404,6 +7479,7 @@ document.getElementById('icmsForaNormalCheckC3').addEventListener('change', calc
 window.icmsManualPorMesC3 = window.icmsManualPorMesC3 || {};
 window.issManualPorMesC3 = window.issManualPorMesC3 || {};
 window.lucroManualPorMesC3 = window.lucroManualPorMesC3 || {};
+window.finManualPorMesC3 = window.finManualPorMesC3 || {};
 function mesesDisponiveisParaManualC3(){
   // Usa os mesmos meses já combinados de PDF+projeção (Passo 2) — se nada foi importado ainda,
   // cai pro "mês único" do modo atual (mensal/trimestral avulso, digitado direto no card único),
@@ -7538,6 +7614,38 @@ function renderizarCamposManuaisPorMesC3(){
       });
     }
   }
+  // Receita financeira por mês — mesmo padrão de ICMS/ISS/Lucro (só aparece com meses reais
+  // importados; aceita só valores ≥0, diferente do lucro que aceita negativo).
+  const finAtivo = document.getElementById('finManualCheck_c3').checked;
+  if (finAtivo){
+    const wrapFin = document.getElementById('finManualWrap_c3');
+    if (meses.length === 0){
+      wrapFin.innerHTML = '<div class="notice" style="font-size:12px; padding:8px;">Nenhum mês real importado ainda — importe receita (PDF ou projeção) no passo 2 antes de informar a receita financeira mês a mês.</div>';
+    } else {
+      wrapFin.innerHTML = meses.map(m=>{
+        const chave = m.mes+'/'+m.ano;
+        const labelMes = m.mes==='ÚNICO' ? 'Este período (trimestre/mês avulso)' : chave;
+        const valorSalvo = window.finManualPorMesC3[chave];
+        const valorTexto = valorSalvo!==undefined ? valorSalvo.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '0,00';
+        return `<div class="row2" style="margin-top:6px; align-items:center;">
+          <label style="margin-top:0; font-weight:400; font-size:12px;">${labelMes}</label>
+          <input type="text" inputmode="decimal" class="money fin-manual-mes" data-chave="${chave}" style="padding:4px 6px; font-size:12px;" value="${valorTexto}">
+        </div>`;
+      }).join('');
+      wrapFin.querySelectorAll('.fin-manual-mes').forEach(el=>{
+        el.addEventListener('input', function(){
+          window.finManualPorMesC3[this.dataset.chave] = Math.max(0, paraNumeroBR(this.value));
+          calcComp3();
+        });
+        el.addEventListener('blur', function(){
+          const n = Math.max(0, avaliarExpressaoOuNumero(this.value));
+          this.value = n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+          window.finManualPorMesC3[this.dataset.chave] = n;
+          calcComp3();
+        });
+      });
+    }
+  }
 }
 // Formata um valor com sinal explícito (+/-), usado na coluna "Acumulado" — deixa claro de relance se
 // o acumulado até aquele mês está em prejuízo ou lucro, sem precisar olhar a cor.
@@ -7583,6 +7691,11 @@ function atualizarColunaAcumuladoLucroC3(){
 }
 document.getElementById('icmsManualCheck_c3').addEventListener('change', function(){
   document.getElementById('icmsManualWrap_c3').style.display = this.checked ? 'block' : 'none';
+  renderizarCamposManuaisPorMesC3();
+  calcComp3();
+});
+document.getElementById('finManualCheck_c3').addEventListener('change', function(){
+  document.getElementById('finManualWrap_c3').style.display = this.checked ? 'block' : 'none';
   renderizarCamposManuaisPorMesC3();
   calcComp3();
 });
@@ -8240,7 +8353,8 @@ function exportarSimulacao(){
       // alíquota fixa genérica em vez da % real de cada mês.
       icmsManualPorMesC3: window.icmsManualPorMesC3 || {},
       issManualPorMesC3: window.issManualPorMesC3 || {},
-      lucroManualPorMesC3: window.lucroManualPorMesC3 || {}
+      lucroManualPorMesC3: window.lucroManualPorMesC3 || {},
+      finManualPorMesC3: window.finManualPorMesC3 || {}
     }
   };
 
@@ -8302,6 +8416,7 @@ function importarSimulacao(file){
       if (est.icmsManualPorMesC3) window.icmsManualPorMesC3 = est.icmsManualPorMesC3;
       if (est.issManualPorMesC3) window.issManualPorMesC3 = est.issManualPorMesC3;
       if (est.lucroManualPorMesC3) window.lucroManualPorMesC3 = est.lucroManualPorMesC3;
+      if (est.finManualPorMesC3) window.finManualPorMesC3 = est.finManualPorMesC3;
 
       // reconstrói a interface e recalcula tudo com os dados restaurados
       buildAnexoTabs();
@@ -8331,6 +8446,7 @@ function importarSimulacao(file){
       document.getElementById('icmsManualWrap_c3').style.display = document.getElementById('icmsManualCheck_c3').checked ? 'block' : 'none';
       document.getElementById('issManualWrap_c3').style.display = document.getElementById('issManualCheck_c3').checked ? 'block' : 'none';
       document.getElementById('lucroManualWrap_c3').style.display = document.getElementById('lucroManualCheck_c3').checked ? 'block' : 'none';
+      document.getElementById('finManualWrap_c3').style.display = document.getElementById('finManualCheck_c3').checked ? 'block' : 'none';
       document.getElementById('btnLimparLucroMesC3').style.display = document.getElementById('lucroManualCheck_c3').checked ? 'inline-block' : 'none';
       document.getElementById('metodoApuracaoRealWrap_c3').style.display = document.getElementById('lucroManualCheck_c3').checked ? 'block' : 'none';
       renderizarCamposManuaisPorMesC3();
