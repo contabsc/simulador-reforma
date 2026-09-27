@@ -1906,7 +1906,7 @@ const CNAE_LIST = [
 // Número da versão atual do app — atualizar aqui a cada nova versão publicada. Usado tanto no rótulo
 // visível na tela (pra conferir se o que está no ar bate com o que foi publicado no Git) quanto no
 // arquivo de backup exportado (campo "versaoApp"), sem precisar mudar em dois lugares separados.
-const VERSAO_APP = 'v368';
+const VERSAO_APP = 'v370';
 document.getElementById('versaoAppLabel').textContent = '· ' + VERSAO_APP;
 
 const ANEXOS = {
@@ -5617,11 +5617,17 @@ function calcularPresumidoRealPorTrimestreC3(mesesOrdenados){
     const lucroQ = lucroManualAtivoLocal
       ? g.meses.reduce((s,chaveMes)=> s + (window.lucroManualPorMesC3[chaveMes]||0), 0)
       : getMoney('lucro_c3') * g.meses.length;
-    const finTrimPreenchido = getMoney('finTrim'+g.q+'_c3') > 0;
+    // "finTrim1-4_c3" são os campos de receita financeira por trimestre do modo "Anual" (projeção
+    // manual, sem meses reais importados) — essa função só roda no modo "Mensal" (visão "Ver mês a
+    // mês"), então NUNCA deve ler esses campos: se o cliente já usou o modo Anual antes de importar o
+    // PDF mês a mês, um valor antigo digitado ali (ex.: R$383.874,23 de um teste anterior) entrava
+    // sorrateiramente na base do IRPJ/CSLL de um trimestre real, inflando o Presumido/Real sem que
+    // nada na tela mostrasse de onde veio — a única fonte válida aqui é "fin_c3" (replicado por mês)
+    // ou o manual por mês (finManualPorMesC3), igual ao que a memória de cálculo já usa.
     const finManualAtivoLocal = document.getElementById('finManualCheck_c3').checked;
     const finQ = finManualAtivoLocal
       ? g.meses.reduce((s,chaveMes)=> s + Math.max(0, window.finManualPorMesC3[chaveMes]||0), 0)
-      : finTrimPreenchido ? Math.max(0, getMoney('finTrim'+g.q+'_c3')) : Math.max(0, getMoney('fin_c3')) * g.meses.length;
+      : Math.max(0, getMoney('fin_c3')) * g.meses.length;
     const icmsManualQ = icmsManualAtivoLocal
       ? g.meses.reduce((s,chaveMes)=> s + (window.icmsManualPorMesC3[chaveMes]||0), 0)
       : undefined;
@@ -5862,10 +5868,13 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
           prejuizoFiscalAcumuladoLado += (-lucroQ);
         }
       }
-      // Sem meses reais preenchidos em "finTrim1-4_c3" (modo Anual manual), replica o valor único
-      // "Receita financeira do mês" (fin_c3) pra cada mês real desse trimestre — mesmo padrão já
-      // corrigido pro "lucro" (lucroQ acima): sem isso, o valor nunca chegava na tabela detalhada.
-      const finTrimPreenchido = getMoney('finTrim'+g.q+'_c3') > 0;
+      // "finTrim1-4_c3" só é uma fonte válida no modo Anual (projeção manual por trimestre, sem meses
+      // reais importados) — essa visão lado a lado também roda no modo Mensal (com meses reais de
+      // PDF/projeção), e nesse caso "finTrim1-4_c3" pode ter ficado com um valor antigo de quando o
+      // cliente usou o modo Anual antes (ex.: um teste anterior), que não tem nada a ver com os meses
+      // reais sendo mostrados agora — sem essa checagem, esse valor entrava sorrateiramente na base do
+      // IRPJ/CSLL do trimestre errado, inflando o Presumido/Real sem nada na tela indicar a causa.
+      const finTrimPreenchido = statePeriodicidadeC3 === 'anual' && getMoney('finTrim'+g.q+'_c3') > 0;
       const finManualAtivoLocal = document.getElementById('finManualCheck_c3').checked;
     const finQ = finManualAtivoLocal
       ? g.meses.reduce((s,chaveMes)=> s + Math.max(0, window.finManualPorMesC3[chaveMes]||0), 0)
@@ -6396,12 +6405,20 @@ function gerarMemoriaCalculoC3(mesesOrdenados, opcoes){
 
   const ANEXO_TIPO_C3 = { I:'comercio', II:'comercio', III:'servico', IV:'servico', V:'servico' };
   const isComercioAtualC3 = ATIVIDADES_C3[stateAtividadeC3] && ATIVIDADES_C3[stateAtividadeC3].tributo === 'icms';
+  // Receita financeira "mês a mês" (finManualCheck_c3): quando marcada, cada mês tem seu próprio
+  // valor em finManualPorMesC3 — precisa somar só os meses de CADA trimestre aqui, senão a memória
+  // de cálculo mostra a base do IRPJ/CSLL sem essa receita, divergindo da tabela mensal/detalhada
+  // (que já somam certo) mesmo quando ambas usam a mesma % de presunção.
+  const finManualAtivoMemoria = document.getElementById('finManualCheck_c3').checked;
   const finC3 = Math.max(0, getMoney('fin_c3'));
 
   let html = '';
   chaves.forEach(chave=>{
     const g = grupos[chave];
     const receitaTrimestre = g.meses.reduce((s,m)=>s+receitaTotalDoMesC3(m),0);
+    const finTrimestreMemoria = finManualAtivoMemoria
+      ? g.meses.reduce((s,m)=> s + Math.max(0, window.finManualPorMesC3[m.mes+'/'+m.ano]||0), 0)
+      : finC3 * g.meses.length;
     // Separa a receita do trimestre entre comércio/indústria e serviços, igual à tabela mensal —
     // usa o "porAnexo" de cada mês quando existe.
     let receitaComercio = 0, receitaServico = 0;
@@ -6430,7 +6447,7 @@ function gerarMemoriaCalculoC3(mesesOrdenados, opcoes){
       presIrpjPct = parseFloat(document.getElementById('presIrpj_c3').value)||ANEXO_PRESUNCAO_C3.I.irpj;
       presCsllPct = parseFloat(document.getElementById('presCsll_c3').value)||ANEXO_PRESUNCAO_C3.I.csll;
     }
-    const p = presumidoDetalhado(receitaTrimestre, presIrpjPct, presCsllPct, finC3*3, 60000, csllTemMajoracaoNoTrimestre(g.ano, g.q), (receitaComercio > 0.5 && receitaServico > 0.5) ? {comercio: receitaComercio, servico: receitaServico} : null);
+    const p = presumidoDetalhado(receitaTrimestre, presIrpjPct, presCsllPct, finTrimestreMemoria, 60000, csllTemMajoracaoNoTrimestre(g.ano, g.q), (receitaComercio > 0.5 && receitaServico > 0.5) ? {comercio: receitaComercio, servico: receitaServico} : null);
 
     html += `<div style="border:1px solid var(--line); border-radius:10px; padding:12px; margin-top:10px;">
       <div style="font-weight:700; margin-bottom:8px;">${g.q}º trimestre ${g.ano}</div>
@@ -6447,7 +6464,10 @@ function gerarMemoriaCalculoC3(mesesOrdenados, opcoes){
     if (receitaServico > 0.5){
       html += `<tr><td style="padding:4px;">Serviços (IRPJ ${ANEXO_PRESUNCAO_C3.III.irpj}%)</td><td style="text-align:right; padding:4px;">${fmt(receitaServico)}</td><td style="text-align:right; padding:4px;">${ANEXO_PRESUNCAO_C3.III.irpj}%</td><td style="text-align:right; padding:4px;">${fmt(receitaServico*ANEXO_PRESUNCAO_C3.III.irpj/100)}</td></tr>`;
     }
-    html += `<tr style="font-weight:600; border-top:1px solid var(--line);"><td style="padding:4px;">Total (base normal, sem majoração)</td><td style="text-align:right; padding:4px;">${fmt(receitaTrimestre)}</td><td></td><td style="text-align:right; padding:4px;">${fmt(receitaTrimestre*presIrpjPct/100)}</td></tr>`;
+    if (finTrimestreMemoria > 0.5){
+      html += `<tr><td style="padding:4px;">Receita financeira (100% na base, sem presunção)</td><td style="text-align:right; padding:4px;">${fmt(finTrimestreMemoria)}</td><td style="text-align:right; padding:4px;">100%</td><td style="text-align:right; padding:4px;">${fmt(finTrimestreMemoria)}</td></tr>`;
+    }
+    html += `<tr style="font-weight:600; border-top:1px solid var(--line);"><td style="padding:4px;">Total (base normal, sem majoração)</td><td style="text-align:right; padding:4px;">${fmt(receitaTrimestre+finTrimestreMemoria)}</td><td></td><td style="text-align:right; padding:4px;">${fmt(receitaTrimestre*presIrpjPct/100+finTrimestreMemoria)}</td></tr>`;
     html += `</tbody></table>`;
 
     if (opcoes.incluirPresumido){
