@@ -1427,6 +1427,29 @@
       <fieldset>
         <legend>Período · alíquotas fora do DAS</legend>
         <div class="period-select" id="periodSelectC3"></div>
+        <label style="margin-top:10px">Regime diferenciado de CBS/IBS (imunidade/isenção)</label>
+        <select id="regimeCbsIbs_c3"></select>
+        <span class="hint" id="hintRegimeCbsIbs_c3" style="display:block; margin-top:4px;"></span>
+        <div id="imuneCamposWrap_c3">
+          <label style="margin-top:10px">Receita imune/isenta de CBS/IBS no período (R$)</label>
+          <input type="text" inputmode="decimal" class="money" id="receitaImuneCbsIbs_c3" value="0,00">
+          <span class="hint" style="display:block; margin-top:4px;">Só a parte da receita já enquadrada no regime acima — reduz a base de CBS/IBS (Simples Híbrido/Presumido/Real), não afeta o DAS.</span>
+          <div class="checkline" style="margin-top:10px">
+            <input type="checkbox" id="imune100PctCheck_c3">
+            <label style="margin:0" for="imune100PctCheck_c3">Toda a receita do período é imune/isenta (100%)</label>
+          </div>
+          <div class="checkline" style="margin-top:6px">
+            <input type="checkbox" id="imuneManualCheck_c3">
+            <label style="margin:0" for="imuneManualCheck_c3">Informar por mês
+              <span class="hint" style="display:block;">um campo aparece pra cada mês de receita já importado/informado.</span>
+            </label>
+          </div>
+          <div id="imuneManualWrap_c3" style="display:none; margin-top:8px;">
+            <label style="margin-top:0">Receita imune/isenta por mês (R$)</label>
+            <div id="imuneManualPorMesC3"></div>
+            <p class="hint" id="imuneManualSemMesesC3" style="display:none;">Nenhum mês de receita importado/informado ainda — importe no Passo 2 ou preencha a receita manualmente pra ver os campos aqui.</p>
+          </div>
+        </div>
         <div class="row2" style="margin-top:10px">
           <div>
             <label style="margin-top:0">CBS (%)</label>
@@ -1480,9 +1503,11 @@
           <div class="tag">Simples Nacional · Híbrido <span class="periodo-badge" id="periodoLabelHibrido"></span></div>
           <h3>Regime híbrido (fora do DAS)</h3>
           <div class="line"><span>DAS reduzido (sem ICMS/ISS/PIS/COFINS)</span><span id="c3_hib_das">—</span></div>
+          <div class="line" id="c3_hib_receitaimune_row" style="display:none; font-size:11px; opacity:0.75;"><span>↳ receita imune/isenta (fora da base de CBS/IBS)</span><span id="c3_hib_receitaimune">—</span></div>
           <div class="line"><span>Débito CBS/IBS sobre a venda</span><span id="c3_hib_debito">—</span></div>
           <div class="line"><span>(–) Crédito CBS/IBS sobre compras/despesas</span><span id="c3_hib_credito_compras">—</span></div>
           <div class="line" id="c3_hib_credito_estoque_row" style="display:none; font-size:12px;"><span>(–) Crédito de estoque — transição (1/12 do saldo em 31/12/2026)</span><span id="c3_hib_credito_estoque">—</span></div>
+          <div class="line" style="font-weight:600; border-top:1px dashed var(--line); padding-top:4px;"><span>CBS/IBS líquido</span><span id="c3_hib_cbsibs_liquido">—</span></div>
           <div class="line total"><span>Total a recolher</span><span id="c3_hib_total">—</span></div>
           <span class="badge credit">crédito pleno repassado ao cliente</span>
           <div class="line" id="c3_hib_credito_row" style="display:none"><span>↳ crédito repassado ao comprador</span><span id="c3_hib_credito">—</span></div>
@@ -1506,6 +1531,7 @@
           <div class="line" id="c3_pres_icms_row"><span>ICMS líquido</span><span id="c3_pres_icms">—</span></div>
           <div class="line" id="c3_pres_icms_saldo_row" style="display:none"><span>↳ saldo credor de ICMS a compensar</span><span id="c3_pres_icms_saldo">—</span></div>
           <div class="line" id="c3_pres_iss_row"><span>ISS</span><span id="c3_pres_iss">—</span></div>
+          <div class="line" id="c3_pres_receitaimune_row" style="display:none; font-size:11px; opacity:0.75;"><span>↳ receita imune/isenta (fora da base de CBS/IBS)</span><span id="c3_pres_receitaimune">—</span></div>
           <div class="line"><span>CBS líquido</span><span id="c3_pres_cbs">—</span></div>
           <div class="line" id="c3_pres_cbs_detalhe_row" style="display:none; font-size:11px; opacity:0.75;"><span>↳ crédito: compras (reduzido pelo redutor) + gastos gerais (integral)</span><span id="c3_pres_cbs_detalhe">—</span></div>
           <div class="line" id="c3_pres_cbs_saldo_row" style="display:none"><span>↳ saldo credor de CBS a compensar</span><span id="c3_pres_cbs_saldo">—</span></div>
@@ -1531,6 +1557,7 @@
           <div class="line" id="c3_real_icms_row"><span>ICMS líquido</span><span id="c3_real_icms">—</span></div>
           <div class="line" id="c3_real_icms_saldo_row" style="display:none"><span>↳ saldo credor de ICMS a compensar</span><span id="c3_real_icms_saldo">—</span></div>
           <div class="line" id="c3_real_iss_row"><span>ISS</span><span id="c3_real_iss">—</span></div>
+          <div class="line" id="c3_real_receitaimune_row" style="display:none; font-size:11px; opacity:0.75;"><span>↳ receita imune/isenta (fora da base de CBS/IBS)</span><span id="c3_real_receitaimune">—</span></div>
           <div class="line"><span>CBS líquido</span><span id="c3_real_cbs">—</span></div>
           <div class="line" id="c3_real_cbs_detalhe_row" style="display:none; font-size:11px; opacity:0.75;"><span>↳ crédito: compras (reduzido pelo redutor) + gastos gerais (integral)</span><span id="c3_real_cbs_detalhe">—</span></div>
           <div class="line" id="c3_real_cbs_saldo_row" style="display:none"><span>↳ saldo credor de CBS a compensar</span><span id="c3_real_cbs_saldo">—</span></div>
@@ -1906,7 +1933,7 @@ const CNAE_LIST = [
 // Número da versão atual do app — atualizar aqui a cada nova versão publicada. Usado tanto no rótulo
 // visível na tela (pra conferir se o que está no ar bate com o que foi publicado no Git) quanto no
 // arquivo de backup exportado (campo "versaoApp"), sem precisar mudar em dois lugares separados.
-const VERSAO_APP = 'v370';
+const VERSAO_APP = 'v381';
 document.getElementById('versaoAppLabel').textContent = '· ' + VERSAO_APP;
 
 const ANEXOS = {
@@ -2895,6 +2922,9 @@ function calcularSimplesViaMotorTab1(mesesC3){
     pctCreditoCompras: document.getElementById('pctCreditoCompras').value,
     despesasGerais: document.getElementById('despesasGerais').value,
     pctCreditoDespesas: document.getElementById('pctCreditoDespesas').value,
+    pctCreditoSimplesCompras: document.getElementById('pctCreditoSimplesCompras').value,
+    pctCreditoSimplesDespesas: document.getElementById('pctCreditoSimplesDespesas').value,
+    pctDasEstimadoCompras: document.getElementById('pctDasEstimadoCompras').value,
     cbsRate: document.getElementById('cbsRate').value,
     ibsRate: document.getElementById('ibsRate').value,
     baseMeses: apuracaoMensalState.baseMeses,
@@ -2910,6 +2940,14 @@ function calcularSimplesViaMotorTab1(mesesC3){
   document.getElementById('pctCreditoCompras').value = document.getElementById('pctCreditoRPCompras_c3').value;
   document.getElementById('despesasGerais').value = document.getElementById('despesasValor_c3').value;
   document.getElementById('pctCreditoDespesas').value = document.getElementById('pctCreditoRPDespesas_c3').value;
+  // Crédito de compras/despesas de FORNECEDORES DO SIMPLES NACIONAL (pelo "% do DAS estimado") —
+  // faltava trocar esses 3 campos pelos equivalentes "_c3" (ficavam com o valor antigo/default da
+  // Aba 1, ex. 10%/10%/2%, em vez do que o usuário realmente configurou na Aba 3, ex. 0%/100%/2%).
+  // Isso fazia o Híbrido da visão "Ver mês a mês" calcular um crédito completamente diferente do
+  // Presumido/Real pro mesmo período — a causa do Híbrido não bater com Presumido/Real ali.
+  document.getElementById('pctCreditoSimplesCompras').value = document.getElementById('pctCreditoSimplesCompras_c3').value;
+  document.getElementById('pctCreditoSimplesDespesas').value = document.getElementById('pctCreditoSimplesDespesas_c3').value;
+  document.getElementById('pctDasEstimadoCompras').value = document.getElementById('pctDasEstimadoCompras_c3').value;
   document.getElementById('cbsRate').value = document.getElementById('cbsAliq_c3').value;
   document.getElementById('ibsRate').value = document.getElementById('ibsAliq_c3').value;
   // apuracaoMensalStateC3 nunca teve um campo "baseMeses" próprio (só rbt12Base, um número simples) —
@@ -2933,6 +2971,9 @@ function calcularSimplesViaMotorTab1(mesesC3){
   document.getElementById('pctCreditoCompras').value = salvo.pctCreditoCompras;
   document.getElementById('despesasGerais').value = salvo.despesasGerais;
   document.getElementById('pctCreditoDespesas').value = salvo.pctCreditoDespesas;
+  document.getElementById('pctCreditoSimplesCompras').value = salvo.pctCreditoSimplesCompras;
+  document.getElementById('pctCreditoSimplesDespesas').value = salvo.pctCreditoSimplesDespesas;
+  document.getElementById('pctDasEstimadoCompras').value = salvo.pctDasEstimadoCompras;
   document.getElementById('cbsRate').value = salvo.cbsRate;
   document.getElementById('ibsRate').value = salvo.ibsRate;
   apuracaoMensalState.baseMeses = salvo.baseMeses;
@@ -4866,6 +4907,102 @@ const ATIVIDADES_C3 = {
 };
 let stateAtividadeC3 = "comercio";
 
+// Regimes diferenciados de CBS/IBS (imunidade/isenção) da reforma tributária — LC 214/2025.
+// Diferente de ATIVIDADES_C3 (que define a % de PRESUNÇÃO do IRPJ/CSLL por atividade), isto é só um
+// catálogo INFORMATIVO (nome + base legal) pra ajudar o contador a identificar o enquadramento — quem
+// efetivamente tira a receita da base de CBS/IBS é o campo "Receita imune/isenta de CBS/IBS no
+// período" (receitaImuneCbsIbs_c3), preenchido manualmente com o R$ da parcela da receita enquadrada.
+// Não é ligado a CNAE nem a atividade automaticamente: uma empresa pode ter mais de uma atividade (ex.:
+// comércio de livros + serviços de treinamento) na mesma receita, e só a parte de livros é imune — por
+// isso a alíquota cheia de CBS/IBS (cbsAliq_c3/ibsAliq_c3) nunca é alterada por este seletor; só o valor
+// em R$ informado no campo de receita imune/isenta reduz a base de cálculo.
+const REGIMES_CBS_IBS_C3 = {
+  nenhum: { nome: "Nenhum — alíquota cheia", reducaoPct: 0 },
+  cestaBasica: {
+    nome: "Cesta Básica Nacional (arroz, feijão, leite, carnes, farinhas, café, manteiga, entre outros)",
+    reducaoPct: 100, tipo: "zero",
+    base: "Art. 125 e Anexo I da LC 214/2025 — alíquota ZERO de CBS/IBS."
+  },
+  hortiFrutaOvos: {
+    nome: "Produtos hortícolas, frutas e ovos",
+    reducaoPct: 100, tipo: "zero",
+    base: "Art. 141 da LC 214/2025 — alíquota ZERO de CBS/IBS."
+  },
+  medicamentosDispositivos: {
+    nome: "Medicamentos e dispositivos médicos listados em anexo, e compras por administração pública/entidades de saúde imunes",
+    reducaoPct: 100, tipo: "imune",
+    base: "Anexo XIII da LC 214/2025 — alíquota ZERO de CBS/IBS.",
+    obs: "Só o item listado no Anexo XIII ou a compra imune — medicamento/dispositivo em geral tem regra própria (redução parcial), fora deste seletor."
+  },
+  acessibilidadePCD: {
+    nome: "Dispositivos de acessibilidade para pessoas com deficiência",
+    reducaoPct: 100, tipo: "zero",
+    base: "Anexo XIII da LC 214/2025 — alíquota ZERO de CBS/IBS."
+  },
+  prouni: {
+    nome: "Ensino superior — bolsista ProUni",
+    reducaoPct: 100, tipo: "isencao",
+    base: "Arts. 165 a 171 da LC 214/2025 — isenção de CBS/IBS na mensalidade do aluno bolsista integral do ProUni."
+  },
+  automoveisPCD: {
+    nome: "Automóveis para pessoas com deficiência, autistas e taxistas",
+    reducaoPct: 100, tipo: "isencao",
+    base: "Isenção com requisitos (laudo, teto de valor, prazo mínimo com o comprador) — confira o enquadramento."
+  },
+  transportePublico: {
+    nome: "Transporte público coletivo (rodoviário, metroviário e ferroviário urbano, semiurbano e metropolitano)",
+    reducaoPct: 100, tipo: "isencao",
+    base: "Art. 158 da LC 214/2025 — isenção de CBS/IBS."
+  },
+  produtorRural: {
+    nome: "Compra de produtor rural não contribuinte (produtos hortícolas/insumos in natura)",
+    reducaoPct: 0, tipo: "credito_presumido",
+    base: "Arts. 164/167 da LC 214/2025 — a compra fica fora do campo, mas gera CRÉDITO PRESUMIDO pro comprador.",
+    obs: "Não reduz a venda de quem compra — não modelado automaticamente. Se o cliente for o comprador, ajuste manualmente o \"% crédito nas compras\" (RP)."
+  },
+  reabilitacaoUrbana: {
+    nome: "Reabilitação urbana de zonas históricas / pesquisa e desenvolvimento por ICT sem fins lucrativos",
+    reducaoPct: 100, tipo: "isencao",
+    base: "Regime específico da LC 214/2025 — isenção de CBS/IBS."
+  },
+  livrosJornaisPeriodicos: {
+    nome: "Livros, jornais, periódicos e papel de impressão (inclui e-books)",
+    reducaoPct: 100, tipo: "imune",
+    base: "Art. 9º, IV da LC 214/2025 — imunidade de CBS/IBS.",
+    obs: "E-books/e-readers não estão citados na lei, mas o STF já estendeu a imunidade a eles (Súmula Vinculante 57) — a tendência é valer também aqui."
+  }
+};
+window.regimeCbsIbsAtualC3 = 'nenhum';
+function buildRegimeCbsIbsC3(){
+  const sel = document.getElementById('regimeCbsIbs_c3');
+  if (!sel || sel.options.length) return; // só monta uma vez
+  Object.entries(REGIMES_CBS_IBS_C3).forEach(([id,r])=>{
+    const opt = document.createElement('option');
+    opt.value = id; opt.textContent = r.nome;
+    sel.appendChild(opt);
+  });
+}
+function aplicarRegimeCbsIbsC3(){
+  // Só documenta a base legal do regime escolhido — não mexe em cbsAliq_c3/ibsAliq_c3 nem no valor de
+  // receitaImuneCbsIbs_c3. Quando a empresa tem mais de uma atividade (comércio + serviço, por
+  // exemplo), só a parte da receita realmente enquadrada nesse regime deve ir no campo de receita
+  // imune/isenta logo abaixo — o contador digita esse valor manualmente, olhando a receita real.
+  // Com "Nenhum" selecionado, os campos de receita imune/isenta não fazem sentido — ficam escondidos.
+  const sel = document.getElementById('regimeCbsIbs_c3');
+  const hintEl = document.getElementById('hintRegimeCbsIbs_c3');
+  const camposWrap = document.getElementById('imuneCamposWrap_c3');
+  const id = sel.value;
+  window.regimeCbsIbsAtualC3 = id;
+  const r = REGIMES_CBS_IBS_C3[id];
+  if (!r || id === 'nenhum'){
+    hintEl.textContent = '';
+    if (camposWrap) camposWrap.style.display = 'none';
+    return;
+  }
+  if (camposWrap) camposWrap.style.display = 'block';
+  hintEl.innerHTML = `<b>${r.base}</b>${r.obs ? ' ' + r.obs : ''}`;
+}
+
 const ATIVIDADE_ANEXO_PADRAO_C3 = {
   comercio:'I', servico:'III', regulamentado:'IV', saude:'III',
   locacaoResidencial:'III', locacaoComercial:'III', imovel:'I', lotes:'I',
@@ -5543,6 +5680,10 @@ function calcularDetalhadoTrimestreEspecificoC3(receitaQ, receitaSTQ, lucroQ, fi
   // o valor real aqui, folha/pró-labore (que são sempre mensais, fixos) seriam multiplicados por 3
   // mesmo quando o período real é menor, inflando o resultado.
   window.numMesesRealAtualC3 = numMesesReal || 3;
+  // Periodicidade ORIGINAL da tela — Compras/Gastos Gerais (comprasValor_c3/despesasValor_c3) ficam
+  // na escala que o usuário escolheu (mensal/trimestral/anual) e não são reescalados aqui; calcComp3()
+  // precisa saber disso pra converter pro equivalente mensal certo (ver comentário em comprasUnico).
+  window.escalaOriginalAtualC3 = salvo.modo==='trimestral' ? 3 : (salvo.modo==='anual' ? 12 : 1);
   dentroDeCalculoDetalhadoC3 = true;
   calcComp3();
   dentroDeCalculoDetalhadoC3 = false;
@@ -5551,6 +5692,7 @@ function calcularDetalhadoTrimestreEspecificoC3(receitaQ, receitaSTQ, lucroQ, fi
   delete window.trimestreEspecificoAtualC3;
   delete window.splitComercioServicoAtualC3;
   delete window.numMesesRealAtualC3;
+  delete window.escalaOriginalAtualC3;
 
   const lerTexto = id => { const el = document.getElementById(id); return el ? paraNumeroBR(el.textContent.replace(/[^0-9,.-]/g,'')) : 0; };
   const resultado = {
@@ -5786,18 +5928,20 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
   const ibsAliqDetalhe = parseFloat(document.getElementById('ibsAliq_c3').value)||0;
   const comprasValorDetalhe = Math.max(0, getMoney('comprasValor_c3'));
   const despesasValorDetalhe = Math.max(0, getMoney('despesasValor_c3'));
-  const baseSimplesTotal = comprasValorDetalhe*(pctSimplesCompras/100) + despesasValorDetalhe*(pctSimplesDespesas/100);
-  // compras/despesas não têm quebra por trimestre na tela (é um valor só) — divide igualmente entre
-  // os trimestres mostrados, senão a soma das colunas ficaria multiplicada pelo nº de trimestres
-  const baseSimplesPorTrimestre = chaves.length > 0 ? baseSimplesTotal / chaves.length : 0;
-  // CBS/IBS não recuperável total (mesma fórmula do crédito do Híbrido): fornecedores do Real/
-  // Presumido pela alíquota cheia de CBS/IBS + fornecedores do Simples pelo "% do DAS estimado" —
-  // dividido igualmente entre os trimestres mostrados, pelo mesmo motivo do baseSimplesPorTrimestre.
-  const custoOcultoTotal = (comprasValorDetalhe*(pctRPComprasDetalhe/100) + despesasValorDetalhe*(pctRPDespesasDetalhe/100)) * ((cbsAliqDetalhe+ibsAliqDetalhe)/100)
-    + baseSimplesTotal*(pctDasEst/100);
-  const custoOcultoPorTrimestre = chaves.length > 0 ? custoOcultoTotal / chaves.length : 0;
+  // Compras/despesas estão na periodicidade da tela (mensal/trimestral/anual) — converte pro valor
+  // MENSAL e multiplica pelo nº real de meses de cada trimestre-calendário (igual à folha e ao
+  // crédito de CBS/IBS do Presumido/Real), em vez de dividir um total único igualmente entre os
+  // trimestres mostrados (que errava sempre que os trimestres tinham quantidades de meses diferentes).
+  const escalaCamposDetalhe = statePeriodicidadeC3==='trimestral' ? 3 : (statePeriodicidadeC3==='anual' ? 12 : 1);
+  const baseSimplesMensal = (comprasValorDetalhe*(pctSimplesCompras/100) + despesasValorDetalhe*(pctSimplesDespesas/100)) / escalaCamposDetalhe;
+  // CBS/IBS não recuperável (mesma fórmula do crédito do Híbrido): fornecedores do Real/Presumido
+  // pela alíquota cheia de CBS/IBS + fornecedores do Simples pelo "% do DAS estimado" — valor mensal.
+  const custoOcultoMensal = ((comprasValorDetalhe*(pctRPComprasDetalhe/100) + despesasValorDetalhe*(pctRPDespesasDetalhe/100)) * ((cbsAliqDetalhe+ibsAliqDetalhe)/100)
+    + baseSimplesMensal*escalaCamposDetalhe*(pctDasEst/100)) / escalaCamposDetalhe;
   chaves.forEach(c=>{
     const g = grupos[c];
+    const baseSimplesPorTrimestre = baseSimplesMensal * g.meses.length;
+    const custoOcultoPorTrimestre = custoOcultoMensal * g.meses.length;
     // "Crédito repassado ao comprador": PIS/COFINS (→CBS) e ICMS/ISS (→IBS) já embutidos no próprio
     // DAS daquele trimestre (g.creditoACbs+g.creditoAIbs, já calculados pela % de repartição da
     // faixa/Anexo) — sem multiplicar por nada, sem depender de Compras/Despesas.
@@ -6022,8 +6166,7 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
       ${cabecalhoHtml}
       ${linhaHtml('Receita', c=>grupos[c].receita)}
       ${linhaHtml('DAS reduzido (sem ICMS/ISS/PIS/COFINS)', c=>grupos[c].dasReduzido)}
-      ${linhaHtml('Débito CBS/IBS sobre a venda', c=>grupos[c].debitoCbsIbs)}
-      ${linhaHtml('(–) Crédito CBS/IBS sobre compras/despesas', c=>-grupos[c].creditoCompras)}
+      ${linhaHtml('CBS/IBS líquido', c=>grupos[c].hib - grupos[c].dasReduzido)}
       ${linhaHtml('Total Híbrido', c=>grupos[c].hib, {total:true})}
       ${linhasComparacaoQuadro(chaves.reduce((s,c)=>s+grupos[c].hib,0))}
       ${chaves.some(c=>grupos[c].creditoRepassadoHibrido>0.5) ? linhaHtml('↳ crédito repassado ao comprador', c=>grupos[c].creditoRepassadoHibrido) : ''}
@@ -6518,6 +6661,97 @@ function gerarMemoriaCalculoC3(mesesOrdenados, opcoes){
         </div>`;
       }
     }
+
+    // ---- CBS/IBS do trimestre (mesma base/alíquota do Simples Híbrido — só muda a forma de exibir) ----
+    // CBS/IBS incide sobre a RECEITA (não sobre o lucro), então vale igual pro Presumido e pro Real —
+    // por isso essa seção aparece uma vez só, fora do bloco específico do Presumido acima.
+    if (opcoes.incluirPresumido || opcoes.incluirReal){
+      const temIcmsAtivoCbs = document.getElementById('temIcms_c3').checked;
+      const temIssAtivoCbs = document.getElementById('temIss_c3').checked;
+      const calcularIbsMemoria = !temIcmsAtivoCbs && !temIssAtivoCbs;
+      const cbsAliqMemoria = parseFloat(document.getElementById('cbsAliq_c3').value)||0;
+      const ibsAliqMemoria = parseFloat(document.getElementById('ibsAliq_c3').value)||0;
+      const redutorAtividadeMemoria = ATIVIDADES_C3[stateAtividadeC3].redutor;
+      const fatorRedutorMemoria = 1 - (redutorAtividadeMemoria/100);
+
+      // Receita imune/isenta do trimestre — mesmo padrão da "receita financeira" acima: mês a mês
+      // quando marcado, valor único replicado por mês do trimestre quando não, ou a receita inteira
+      // do trimestre quando "100%" estiver marcado.
+      const imune100PctMemoria = document.getElementById('imune100PctCheck_c3').checked;
+      const imuneManualAtivoMemoria = document.getElementById('imuneManualCheck_c3').checked;
+      const imuneC3Memoria = Math.max(0, getMoney('receitaImuneCbsIbs_c3'));
+      const imuneTrimestreMemoria = imune100PctMemoria
+        ? receitaTrimestre
+        : imuneManualAtivoMemoria
+        ? g.meses.reduce((s,m)=> s + Math.max(0, window.imunePorMesC3[m.mes+'/'+m.ano]||0), 0)
+        : Math.min(imuneC3Memoria * g.meses.length, receitaTrimestre);
+      const baseCbsIbsTrimestre = Math.max(0, receitaTrimestre - imuneTrimestreMemoria);
+
+      // Crédito sobre compras/despesas: os campos de Compras/Despesas são um valor MENSAL fixo que se
+      // repete todo mês (mesmo padrão de folha_c3/prolabore_c3/fin_c3, não um total do período inteiro
+      // a dividir) — por isso o crédito mensal é multiplicado pelo Nº REAL de meses de cada trimestre
+      // (g.meses.length), igual já faz a folha/pró-labore acima em calcComp3, em vez de dividir um
+      // total único igualmente entre os trimestres mostrados (o que sub-calculava o crédito de
+      // trimestres com 3 meses reais e inflava o de trimestres parciais, com só 1 ou 2 meses).
+      const escalaPeriodoMemoria = statePeriodicidadeC3==='trimestral' ? 3 : (statePeriodicidadeC3==='anual' ? 12 : 1);
+      const comprasValorMemoria = Math.max(0, getMoney('comprasValor_c3')) / escalaPeriodoMemoria;
+      const despesasValorMemoria = Math.max(0, getMoney('despesasValor_c3')) / escalaPeriodoMemoria;
+      const pctCreditoRPComprasMemoria = parseFloat(document.getElementById('pctCreditoRPCompras_c3').value)||0;
+      const pctCreditoRPDespesasMemoria = parseFloat(document.getElementById('pctCreditoRPDespesas_c3').value)||0;
+      const pctCreditoSimplesComprasMemoria = parseFloat(document.getElementById('pctCreditoSimplesCompras_c3').value)||0;
+      const pctCreditoSimplesDespesasMemoria = parseFloat(document.getElementById('pctCreditoSimplesDespesas_c3').value)||0;
+      const pctDasEstMemoria = parseFloat(document.getElementById('pctDasEstimadoCompras_c3').value)||0;
+      const creditoComprasRPMemoria = comprasValorMemoria*(pctCreditoRPComprasMemoria/100);
+      const creditoDespesasRPMemoria = despesasValorMemoria*(pctCreditoRPDespesasMemoria/100);
+      const creditoComprasSimplesTotalMemoria = comprasValorMemoria*(pctCreditoSimplesComprasMemoria/100)*(pctDasEstMemoria/100);
+      const creditoDespesasSimplesTotalMemoria = despesasValorMemoria*(pctCreditoSimplesDespesasMemoria/100)*(pctDasEstMemoria/100);
+      const somaAliqMemoria = cbsAliqMemoria + ibsAliqMemoria;
+      const proporcaoCbsMemoria = somaAliqMemoria > 0 ? cbsAliqMemoria/somaAliqMemoria : 0.5;
+      const proporcaoIbsMemoria = 1 - proporcaoCbsMemoria;
+      const cbsCreditoMensalMemoria = ((creditoComprasRPMemoria + creditoDespesasRPMemoria) * (cbsAliqMemoria/100)
+        + (creditoComprasSimplesTotalMemoria+creditoDespesasSimplesTotalMemoria)*proporcaoCbsMemoria) * fatorRedutorMemoria;
+      const ibsCreditoMensalMemoria = ((creditoComprasRPMemoria + creditoDespesasRPMemoria) * (ibsAliqMemoria/100)
+        + (creditoComprasSimplesTotalMemoria+creditoDespesasSimplesTotalMemoria)*proporcaoIbsMemoria) * fatorRedutorMemoria;
+      const cbsCreditoTrimestreMemoria = cbsCreditoMensalMemoria * g.meses.length;
+      const ibsCreditoTrimestreMemoria = ibsCreditoMensalMemoria * g.meses.length;
+
+      const cbsDebitoTrimestreMemoria = baseCbsIbsTrimestre * (cbsAliqMemoria/100) * fatorRedutorMemoria;
+      const cbsLiquidoTrimestreMemoria = Math.max(0, cbsDebitoTrimestreMemoria - cbsCreditoTrimestreMemoria);
+      const cbsSaldoCredorTrimestreMemoria = Math.max(0, cbsCreditoTrimestreMemoria - cbsDebitoTrimestreMemoria);
+      let ibsDebitoTrimestreMemoria = 0, ibsLiquidoTrimestreMemoria = 0, ibsSaldoCredorTrimestreMemoria = 0;
+      if (calcularIbsMemoria){
+        ibsDebitoTrimestreMemoria = baseCbsIbsTrimestre * (ibsAliqMemoria/100) * fatorRedutorMemoria;
+        ibsLiquidoTrimestreMemoria = Math.max(0, ibsDebitoTrimestreMemoria - ibsCreditoTrimestreMemoria);
+        ibsSaldoCredorTrimestreMemoria = Math.max(0, ibsCreditoTrimestreMemoria - ibsDebitoTrimestreMemoria);
+      }
+
+      html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);">
+        <div style="font-weight:600;">CBS/IBS do trimestre (vale igual pro Presumido e pro Real — mesma base do Simples Híbrido)</div>
+        <div class="line"><span>Receita do trimestre</span><span>${fmt(receitaTrimestre)}</span></div>`;
+      if (imuneTrimestreMemoria > 0.5){
+        html += `<div class="line"><span>(–) Receita imune/isenta</span><span>${fmt(imuneTrimestreMemoria)}</span></div>`;
+      }
+      html += `<div class="line" style="font-weight:600;"><span>Base de cálculo CBS/IBS</span><span>${fmt(baseCbsIbsTrimestre)}</span></div>
+        <div class="line"><span>Débito CBS (${cbsAliqMemoria}%${fatorRedutorMemoria<1 ? ` × ${(fatorRedutorMemoria*100).toFixed(2)}% (redutor da atividade)` : ''})</span><span>${fmt(cbsDebitoTrimestreMemoria)}</span></div>`;
+      if (cbsCreditoTrimestreMemoria > 0.5){
+        html += `<div class="line"><span>(–) Crédito CBS sobre compras/despesas</span><span>${fmt(cbsCreditoTrimestreMemoria)}</span></div>`;
+      }
+      html += `<div class="line" style="font-weight:700;"><span>CBS líquido do trimestre</span><span>${fmt(cbsLiquidoTrimestreMemoria)}</span></div>`;
+      if (cbsSaldoCredorTrimestreMemoria > 0.5){
+        html += `<div class="line" style="color:var(--acc,#0a7a3d);"><span>Saldo credor de CBS a compensar</span><span>${fmt(cbsSaldoCredorTrimestreMemoria)}</span></div>`;
+      }
+      if (calcularIbsMemoria){
+        html += `<div class="line" style="margin-top:4px;"><span>Débito IBS (${ibsAliqMemoria}%)</span><span>${fmt(ibsDebitoTrimestreMemoria)}</span></div>`;
+        if (ibsCreditoTrimestreMemoria > 0.5){
+          html += `<div class="line"><span>(–) Crédito IBS sobre compras/despesas</span><span>${fmt(ibsCreditoTrimestreMemoria)}</span></div>`;
+        }
+        html += `<div class="line" style="font-weight:700;"><span>IBS líquido do trimestre</span><span>${fmt(ibsLiquidoTrimestreMemoria)}</span></div>`;
+        if (ibsSaldoCredorTrimestreMemoria > 0.5){
+          html += `<div class="line" style="color:var(--acc,#0a7a3d);"><span>Saldo credor de IBS a compensar</span><span>${fmt(ibsSaldoCredorTrimestreMemoria)}</span></div>`;
+        }
+      }
+      html += `</div>`;
+    }
     html += `</div>`;
   });
   return html;
@@ -6651,6 +6885,24 @@ function calcComp3(){
   const receitaOutraLocacao = locacaoComboAtivo ? Math.max(0, getMoney('receitaOutraLocacao_c3')) / escalaPeriodo : 0;
   const receitaTotalComLocacao = receita + receitaOutraLocacao;
 
+  // Receita imune/isenta de CBS/IBS (regime diferenciado — cesta básica, livros, medicamentos listados
+  // etc.): valor em R$ informado manualmente pelo contador. Calculada AQUI (antes do bloco DAS/Híbrido
+  // logo abaixo) porque precisa valer nos TRÊS regimes que calculam CBS/IBS à parte — Simples Híbrido,
+  // Presumido e Real — não só em Presumido/Real. Não afeta o DAS puro (que não separa CBS/IBS da guia
+  // única) nem a alíquota cheia (cbsAliq_c3/ibsAliq_c3): só tira essa parcela da base de cálculo.
+  // "100%" tem prioridade sobre os outros dois modos — trata a receita do período inteira como imune,
+  // sem precisar digitar nada. Senão, com "informar por mês" marcado, soma o que foi digitado em cada
+  // mês (window.imunePorMesC3), igual ao ICMS/ISS mês a mês; senão, usa o valor único do campo, na
+  // periodicidade da receita, escalado pra monthly-equivalente como receitaOutraLocacao.
+  const imune100PctAtivo = document.getElementById('imune100PctCheck_c3').checked;
+  const imuneManualAtivo = document.getElementById('imuneManualCheck_c3').checked;
+  const receitaImuneCbsIbsBruta = imune100PctAtivo
+    ? receitaTotalComLocacao
+    : imuneManualAtivo
+    ? mesesDisponiveisParaManualC3().reduce((s,m)=> s + Math.max(0, window.imunePorMesC3[m.mes+'/'+m.ano]||0), 0) / escalaPeriodo
+    : Math.max(0, getMoney('receitaImuneCbsIbs_c3')) / escalaPeriodo;
+  const receitaImuneCbsIbs = Math.min(receitaImuneCbsIbsBruta, receitaTotalComLocacao);
+
   const lucroReal = getMoney('lucro_c3'); // pode ser negativo (prejuízo) — IRPJ/CSLL do Real ficam 0 nesse caso, não a receita
   // Prioriza o split Comércio/Serviços DESSE trimestre específico (passado por
   // calcularDetalhadoTrimestreEspecificoC3, quando estamos processando uma coluna da visão lado a
@@ -6746,9 +6998,18 @@ function calcComp3(){
   const cbsAliq = parseFloat(document.getElementById('cbsAliq_c3').value)||0;
 
   // ---- Compras/despesas com percentuais de crédito próprios para cada linha ----
-  // valores informados na MESMA periodicidade selecionada acima (mensal/trimestral/anual) — convertidos para equivalente mensal, igual à receita
-  const comprasUnico = Math.max(0, getMoney('comprasValor_c3')) / escalaPeriodo;
-  const despesasUnico = Math.max(0, getMoney('despesasValor_c3')) / escalaPeriodo;
+  // valores informados na MESMA periodicidade selecionada acima (mensal/trimestral/anual) — convertidos para equivalente mensal, igual à receita.
+  // Na visão detalhada/mês a mês (calcularDetalhadoTrimestreEspecificoC3), statePeriodicidadeC3 é
+  // forçado pra 'trimestral' SEM reescalar o campo — que continua na periodicidade que o usuário
+  // escolheu na tela (escalaOriginalAtualC3, ex. mensal). Sem essa correção, um valor MENSAL de
+  // compras era dividido por 3 como se fosse trimestral, e o crédito de CBS/IBS do Presumido/Real
+  // saía com 1/3 do valor certo (ex.: R$1.531,91 em vez de R$4.595,74 por mês) — e diferente do
+  // Híbrido, que calcula mês a mês com o valor mensal cheio. Igual à folha: valor mensal × nº real
+  // de meses do trimestre-calendário (parcial ou não) ÷ escalaPeriodo.
+  const escalaCamposCompras = window.escalaOriginalAtualC3 || escalaPeriodo;
+  const numMesesCompras = window.numMesesRealAtualC3 || escalaPeriodo;
+  const comprasUnico = Math.max(0, getMoney('comprasValor_c3')) / escalaCamposCompras * numMesesCompras / escalaPeriodo;
+  const despesasUnico = Math.max(0, getMoney('despesasValor_c3')) / escalaCamposCompras * numMesesCompras / escalaPeriodo;
   const pctCreditoRPCompras = parseFloat(document.getElementById('pctCreditoRPCompras_c3').value)||0;
   const pctCreditoSimplesCompras = parseFloat(document.getElementById('pctCreditoSimplesCompras_c3').value)||0;
   const pctCreditoRPDespesas = parseFloat(document.getElementById('pctCreditoRPDespesas_c3').value)||0;
@@ -6925,7 +7186,12 @@ function calcComp3(){
     const fatorRedutorAtividadeHibrido = 1 - (ATIVIDADES_C3[stateAtividadeC3].redutor/100);
     const ibsAliqHibrido = parseFloat(document.getElementById('ibsAliq_c3').value)||0;
     const dasReduzidoHibrido = totalSimplesDAS - parteSubstituida;
-    const debitoCbsIbsHibrido = receita_multi * ((cbsAliq+ibsAliqHibrido)/100) * fatorRedutorAtividadeHibrido;
+    // Receita imune/isenta (mesmo campo usado no Presumido/Real, ver mais acima) também sai da base do
+    // Híbrido — o CBS/IBS calculado fora do DAS deve tratar a mesma parcela imune/isenta da mesma forma
+    // nos três regimes que o calculam à parte (Híbrido, Presumido e Real).
+    const receitaImuneCbsIbsHibrido = imune100PctAtivo ? receita_multi : Math.min(receitaImuneCbsIbs, receita_multi);
+    const baseCbsIbsHibrido = Math.max(0, receita_multi - receitaImuneCbsIbsHibrido);
+    const debitoCbsIbsHibrido = baseCbsIbsHibrido * ((cbsAliq+ibsAliqHibrido)/100) * fatorRedutorAtividadeHibrido;
     // Mesma separação de componentes do Presumido/Real (ver comentário acima, em creditoComprasRP):
     // fornecedores do Real/Presumido dão crédito pleno (× alíquota CBS/IBS); fornecedores do Simples
     // dão crédito só pelo "% do DAS estimado" (já é o valor final, sem multiplicar pela alíquota de
@@ -6960,10 +7226,15 @@ function calcComp3(){
     document.getElementById('c3_das_total_com_custo_row').style.display = custoOcultoCompletoC3 > 0.5 ? 'flex' : 'none';
     document.getElementById('c3_das_total_com_custo').textContent = fmtP(totalSimplesDAS + custoOcultoCompletoC3);
     document.getElementById('c3_hib_das').textContent = fmtP(dasReduzidoHibrido);
+    document.getElementById('c3_hib_receitaimune_row').style.display = receitaImuneCbsIbsHibrido > 0.5 ? 'flex' : 'none';
+    document.getElementById('c3_hib_receitaimune').textContent = fmtP(receitaImuneCbsIbsHibrido);
     document.getElementById('c3_hib_debito').textContent = fmtP(debitoCbsIbsHibrido);
     document.getElementById('c3_hib_credito_compras').textContent = '– ' + fmtP(creditoCbsIbsHibrido);
     document.getElementById('c3_hib_credito_estoque_row').style.display = creditoEstoqueMensalC3 > 0.5 ? 'flex' : 'none';
     document.getElementById('c3_hib_credito_estoque').textContent = '– ' + fmtP(creditoEstoqueMensalC3);
+    // Mesmo nome/posição do "CBS líquido"+"IBS líquido" do Presumido/Real — aqui é um valor só (CBS+IBS
+    // juntos), já que o Híbrido não separa as duas alíquotas em linhas de débito/crédito diferentes.
+    document.getElementById('c3_hib_cbsibs_liquido').textContent = fmtP(liquidoCbsIbsHibrido);
     document.getElementById('c3_hib_total').textContent = fmtP(totalSimplesHibrido);
 
     // ---- Crédito repassado ao comprador em cada modo ----
@@ -7119,7 +7390,9 @@ function calcComp3(){
   } else {
     containerRedutorSocial.innerHTML = '';
   }
-  const baseCbsIbsComRedutorSocial = Math.max(0, receitaTotalComLocacao - redutorSocialTotalReais);
+  // receitaImuneCbsIbs já foi calculada mais acima (antes do bloco DAS/Híbrido), pra valer nos três
+  // regimes (Híbrido, Presumido, Real) — aqui só entra na base do Presumido/Real.
+  const baseCbsIbsComRedutorSocial = imune100PctAtivo ? 0 : Math.max(0, receitaTotalComLocacao - redutorSocialTotalReais - receitaImuneCbsIbs);
 
   // ---- CBS líquido ----
   const cbsDebito = baseCbsIbsComRedutorSocial * (cbsAliq/100) * fatorRedutorC3;
@@ -7373,12 +7646,19 @@ function calcComp3(){
   document.getElementById('c3_pres_icms').textContent = fmtP(icmsLiquido);
   document.getElementById('c3_pres_iss_row').style.display = temIss ? 'flex' : 'none';
   document.getElementById('c3_pres_iss').textContent = fmtP(issDebito);
+  document.getElementById('c3_pres_receitaimune_row').style.display = receitaImuneCbsIbs > 0.5 ? 'flex' : 'none';
+  document.getElementById('c3_pres_receitaimune').textContent = fmtP(receitaImuneCbsIbs);
   document.getElementById('c3_pres_cbs').textContent = fmtP(cbsLiquido);
   document.getElementById('c3_pres_ibs').textContent = fmtP(ibsLiquido);
-  const temRedutorAtivoDisplay = fatorRedutorC3 < 1;
-  document.getElementById('c3_pres_cbs_detalhe_row').style.display = temRedutorAtivoDisplay ? 'flex' : 'none';
+  // Mostra o detalhe do crédito sempre que ele existir de verdade (não só quando há redutor de
+  // atividade ativo) — sem isso, o "CBS líquido" aparecia sem nenhuma explicação do desconto de
+  // crédito, dando a impressão (errada) de que o cálculo era diferente do Simples Híbrido, que sempre
+  // mostra o débito bruto e o crédito como linhas separadas.
+  const temCreditoCbsDisplay = (cbsCreditoCompras + cbsCreditoDespesas) > 0.5;
+  const temCreditoIbsDisplay = (ibsCreditoCompras + ibsCreditoDespesas) > 0.5;
+  document.getElementById('c3_pres_cbs_detalhe_row').style.display = temCreditoCbsDisplay ? 'flex' : 'none';
   document.getElementById('c3_pres_cbs_detalhe').textContent = `${fmtP(cbsCreditoCompras)} + ${fmtP(cbsCreditoDespesas)}`;
-  document.getElementById('c3_pres_ibs_detalhe_row').style.display = (temRedutorAtivoDisplay && calcularIBS) ? 'flex' : 'none';
+  document.getElementById('c3_pres_ibs_detalhe_row').style.display = (temCreditoIbsDisplay && calcularIBS) ? 'flex' : 'none';
   document.getElementById('c3_pres_ibs_detalhe').textContent = `${fmtP(ibsCreditoCompras)} + ${fmtP(ibsCreditoDespesas)}`;
   document.getElementById('c3_pres_cbsibs_total').textContent = fmtP(consumoPresumido);
   document.getElementById('c3_pres_inss').textContent = fmtP(inssPatronal);
@@ -7405,11 +7685,13 @@ function calcComp3(){
   document.getElementById('c3_real_icms').textContent = fmtP(icmsLiquido);
   document.getElementById('c3_real_iss_row').style.display = temIss ? 'flex' : 'none';
   document.getElementById('c3_real_iss').textContent = fmtP(issDebito);
+  document.getElementById('c3_real_receitaimune_row').style.display = receitaImuneCbsIbs > 0.5 ? 'flex' : 'none';
+  document.getElementById('c3_real_receitaimune').textContent = fmtP(receitaImuneCbsIbs);
   document.getElementById('c3_real_cbs').textContent = fmtP(cbsLiquido);
   document.getElementById('c3_real_ibs').textContent = fmtP(ibsLiquido);
-  document.getElementById('c3_real_cbs_detalhe_row').style.display = temRedutorAtivoDisplay ? 'flex' : 'none';
+  document.getElementById('c3_real_cbs_detalhe_row').style.display = temCreditoCbsDisplay ? 'flex' : 'none';
   document.getElementById('c3_real_cbs_detalhe').textContent = `${fmtP(cbsCreditoCompras)} + ${fmtP(cbsCreditoDespesas)}`;
-  document.getElementById('c3_real_ibs_detalhe_row').style.display = (temRedutorAtivoDisplay && calcularIBS) ? 'flex' : 'none';
+  document.getElementById('c3_real_ibs_detalhe_row').style.display = (temCreditoIbsDisplay && calcularIBS) ? 'flex' : 'none';
   document.getElementById('c3_real_ibs_detalhe').textContent = `${fmtP(ibsCreditoCompras)} + ${fmtP(ibsCreditoDespesas)}`;
   document.getElementById('c3_real_cbsibs_total').textContent = fmtP(consumoReal);
   document.getElementById('c3_real_inss').textContent = fmtP(inssPatronal);
@@ -7482,7 +7764,7 @@ function calcComp3(){
 
 document.getElementById('comprasValor_c3').addEventListener('input', function(){ this.dataset.manual = 'true'; });
 initMoneyInputs(['rbt12_c3','rba_c3','receita_c3','lucro_c3','fin_c3','folha_c3','prolabore_c3',
-  'comprasValor_c3','despesasValor_c3','pago2026_c3','receitaOutraLocacao_c3','estoqueValor_c3',
+  'comprasValor_c3','despesasValor_c3','pago2026_c3','receitaOutraLocacao_c3','estoqueValor_c3','receitaImuneCbsIbs_c3',
   'icmsCreditoReal_c3',
   'receitaTrimestral_c3','receitaSTTrimestral_c3','lucroTrimestral_c3','finTrimestral_c3',
   'trim1_c3','trim2_c3','trim3_c3','trim4_c3','lucroTrim1_c3','lucroTrim2_c3','lucroTrim3_c3','lucroTrim4_c3',
@@ -7500,6 +7782,7 @@ window.icmsManualPorMesC3 = window.icmsManualPorMesC3 || {};
 window.issManualPorMesC3 = window.issManualPorMesC3 || {};
 window.lucroManualPorMesC3 = window.lucroManualPorMesC3 || {};
 window.finManualPorMesC3 = window.finManualPorMesC3 || {};
+window.imunePorMesC3 = window.imunePorMesC3 || {};
 function mesesDisponiveisParaManualC3(){
   // Usa os mesmos meses já combinados de PDF+projeção (Passo 2) — se nada foi importado ainda,
   // cai pro "mês único" do modo atual (mensal/trimestral avulso, digitado direto no card único),
@@ -7561,6 +7844,36 @@ function renderizarCamposManuaisPorMesC3(){
       el.addEventListener('blur', function(){
         const n = paraNumeroBR(this.value);
         this.value = n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+      });
+    });
+  }
+
+  // Receita imune/isenta de CBS/IBS por mês — mesmo padrão de ICMS/ISS por mês (aceita o fallback
+  // "ÚNICO" quando não há mês real importado, já que também é usado direto no card único).
+  const imuneAtivo = document.getElementById('imuneManualCheck_c3').checked;
+  if (imuneAtivo){
+    const wrap = document.getElementById('imuneManualPorMesC3');
+    document.getElementById('imuneManualSemMesesC3').style.display = meses.length===0 ? 'block' : 'none';
+    wrap.innerHTML = meses.map(m=>{
+      const chave = m.mes+'/'+m.ano;
+      const labelMes = m.mes==='ÚNICO' ? 'Este período (trimestre/mês avulso)' : chave;
+      const valorSalvo = window.imunePorMesC3[chave];
+      const valorTexto = valorSalvo!==undefined ? valorSalvo.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '0,00';
+      return `<div class="row2" style="margin-top:6px; align-items:center;">
+        <label style="margin-top:0; font-weight:400;">${labelMes}</label>
+        <input type="text" inputmode="decimal" class="money imune-manual-mes" data-chave="${chave}" value="${valorTexto}">
+      </div>`;
+    }).join('');
+    wrap.querySelectorAll('.imune-manual-mes').forEach(el=>{
+      el.addEventListener('input', function(){
+        window.imunePorMesC3[this.dataset.chave] = Math.max(0, paraNumeroBR(this.value));
+        calcComp3();
+      });
+      el.addEventListener('blur', function(){
+        const n = Math.max(0, paraNumeroBR(this.value));
+        this.value = n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+        window.imunePorMesC3[this.dataset.chave] = n;
+        calcComp3();
       });
     });
   }
@@ -7719,6 +8032,18 @@ document.getElementById('finManualCheck_c3').addEventListener('change', function
   renderizarCamposManuaisPorMesC3();
   calcComp3();
 });
+document.getElementById('imuneManualCheck_c3').addEventListener('change', function(){
+  document.getElementById('imuneManualWrap_c3').style.display = this.checked ? 'block' : 'none';
+  renderizarCamposManuaisPorMesC3();
+  calcComp3();
+});
+// "Toda a receita é imune/isenta (100%)" tem prioridade sobre o valor digitado/mês a mês — desabilita
+// os outros dois campos pra deixar claro que eles são ignorados enquanto isso estiver marcado.
+document.getElementById('imune100PctCheck_c3').addEventListener('change', function(){
+  document.getElementById('receitaImuneCbsIbs_c3').disabled = this.checked;
+  document.getElementById('imuneManualCheck_c3').disabled = this.checked;
+  calcComp3();
+});
 document.getElementById('issManualCheck_c3').addEventListener('change', function(){
   document.getElementById('issManualWrap_c3').style.display = this.checked ? 'block' : 'none';
   renderizarCamposManuaisPorMesC3();
@@ -7794,9 +8119,12 @@ buildAtividadeC3Tabs();
 atualizarLabelProjecaoTipoC3();
 buildPeriodicidadeC3Tabs();
 buildPeriodosC3();
+buildRegimeCbsIbsC3();
+aplicarRegimeCbsIbsC3();
 calcComp3();
 document.getElementById('cbsAliq_c3').addEventListener('change', buildPeriodosC3);
 document.getElementById('ibsAliq_c3').addEventListener('change', buildPeriodosC3);
+document.getElementById('regimeCbsIbs_c3').addEventListener('change', aplicarRegimeCbsIbsC3);
 document.getElementById('pdfImportInputC3').addEventListener('change', (e)=>{
   const file = e.target.files[0];
   if (!file) return;
@@ -8374,7 +8702,8 @@ function exportarSimulacao(){
       icmsManualPorMesC3: window.icmsManualPorMesC3 || {},
       issManualPorMesC3: window.issManualPorMesC3 || {},
       lucroManualPorMesC3: window.lucroManualPorMesC3 || {},
-      finManualPorMesC3: window.finManualPorMesC3 || {}
+      finManualPorMesC3: window.finManualPorMesC3 || {},
+      imunePorMesC3: window.imunePorMesC3 || {}
     }
   };
 
@@ -8437,6 +8766,7 @@ function importarSimulacao(file){
       if (est.issManualPorMesC3) window.issManualPorMesC3 = est.issManualPorMesC3;
       if (est.lucroManualPorMesC3) window.lucroManualPorMesC3 = est.lucroManualPorMesC3;
       if (est.finManualPorMesC3) window.finManualPorMesC3 = est.finManualPorMesC3;
+      if (est.imunePorMesC3) window.imunePorMesC3 = est.imunePorMesC3;
 
       // reconstrói a interface e recalcula tudo com os dados restaurados
       buildAnexoTabs();
@@ -8467,6 +8797,10 @@ function importarSimulacao(file){
       document.getElementById('issManualWrap_c3').style.display = document.getElementById('issManualCheck_c3').checked ? 'block' : 'none';
       document.getElementById('lucroManualWrap_c3').style.display = document.getElementById('lucroManualCheck_c3').checked ? 'block' : 'none';
       document.getElementById('finManualWrap_c3').style.display = document.getElementById('finManualCheck_c3').checked ? 'block' : 'none';
+      document.getElementById('imuneManualWrap_c3').style.display = document.getElementById('imuneManualCheck_c3').checked ? 'block' : 'none';
+      document.getElementById('receitaImuneCbsIbs_c3').disabled = document.getElementById('imune100PctCheck_c3').checked;
+      document.getElementById('imuneManualCheck_c3').disabled = document.getElementById('imune100PctCheck_c3').checked;
+      aplicarRegimeCbsIbsC3();
       document.getElementById('btnLimparLucroMesC3').style.display = document.getElementById('lucroManualCheck_c3').checked ? 'inline-block' : 'none';
       document.getElementById('metodoApuracaoRealWrap_c3').style.display = document.getElementById('lucroManualCheck_c3').checked ? 'block' : 'none';
       renderizarCamposManuaisPorMesC3();
