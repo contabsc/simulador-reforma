@@ -1264,13 +1264,13 @@
             <input type="number" id="icmsAliq_c3" value="12" step="0.1">
           </div>
         </div>
-        <span class="hint">Débito incide sobre a receita; crédito incide sobre as compras — use alíquotas diferentes se vendas e compras tiverem estados/produtos diferentes.</span>
+        <span class="hint">Débito incide sobre a receita de Comércio/Indústria; crédito incide sobre as compras de mercadorias/matérias-primas — use alíquotas diferentes se vendas e compras tiverem estados/produtos diferentes.</span>
         <div class="checkline" id="icmsForaNormalCheckRow_c3" style="display:none">
           <input type="checkbox" id="icmsForaNormalCheckC3">
           <label style="margin:0" for="icmsForaNormalCheckC3">Simples DAS: calcular o ICMS/ISS "por fora" pelo débito/crédito acima, em vez da fórmula-teto oficial</label>
         </div>
         <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
-          <div class="notice" style="margin-bottom:0;"><b>Crédito de ICMS — fórmula fixa.</b> O crédito de ICMS das compras é sempre calculado assim: (compras+despesas × % Presumido/Real) × alíquota de crédito acima + (compras+despesas × % Simples) × <b>2,95% fixo</b> (estimativa de mercado do ICMS embutido no DAS do fornecedor Simples — confirme com o contador se a alíquota real do seu caso for diferente). O valor de ICMS eventualmente importado de um PDF de entradas por CFOP <b>não é mais usado</b> neste cálculo.</div>
+          <div class="notice" style="margin-bottom:0;"><b>ICMS líquido (Presumido/Real):</b> receita de Comércio/Indústria × alíquota de débito − crédito sobre compras de mercadorias/matérias-primas: (compras × % fornecedores Presumido/Real × alíquota de crédito) + (compras × % fornecedores Simples × <b>2,95% fixo</b>, estimativa do ICMS embutido no DAS do fornecedor). Gastos Gerais não geram crédito de ICMS. Ex.: vendas R$100.000 × 17% = R$17.000; compras R$50.000 × 12% = R$6.000; ICMS a pagar = R$11.000.</div>
           <input type="text" inputmode="decimal" class="money" id="icmsCreditoReal_c3" value="0,00" style="display:none;">
         </div>
         <div class="checkline" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
@@ -1933,7 +1933,7 @@ const CNAE_LIST = [
 // Número da versão atual do app — atualizar aqui a cada nova versão publicada. Usado tanto no rótulo
 // visível na tela (pra conferir se o que está no ar bate com o que foi publicado no Git) quanto no
 // arquivo de backup exportado (campo "versaoApp"), sem precisar mudar em dois lugares separados.
-const VERSAO_APP = 'v381';
+const VERSAO_APP = 'v383';
 document.getElementById('versaoAppLabel').textContent = '· ' + VERSAO_APP;
 
 const ANEXOS = {
@@ -5790,7 +5790,7 @@ function calcularPresumidoRealPorTrimestreC3(mesesOrdenados){
         if (isComercioAtualC3Local) receitaComercioQ += total; else receitaServicoQ += total;
       }
     });
-    const splitComercioServicoQ = (receitaComercioQ > 0.5 && receitaServicoQ > 0.5) ? {comercio: receitaComercioQ, servico: receitaServicoQ} : null;
+    const splitComercioServicoQ = (receitaComercioQ + receitaServicoQ) > 0.5 ? {comercio: receitaComercioQ, servico: receitaServicoQ} : null; // sempre que houver receita — ICMS/ISS do calcComp3 precisam da divisão DESSE trimestre, mesmo quando um dos lados é zero
 
     // Presumido não depende do lucro (usa % de presunção sobre a receita) — calcula uma vez com
     // lucroQ=0, comum aos dois métodos (Trimestral e Balanço de Suspensão), já que só o Real muda.
@@ -6055,7 +6055,7 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
           if (isComercioAtualLado) receitaComercioQ += total; else receitaServicoQ += total;
         }
       });
-      const splitComercioServicoQ = (receitaComercioQ > 0.5 && receitaServicoQ > 0.5) ? {comercio: receitaComercioQ, servico: receitaServicoQ} : null;
+      const splitComercioServicoQ = (receitaComercioQ + receitaServicoQ) > 0.5 ? {comercio: receitaComercioQ, servico: receitaServicoQ} : null; // sempre que houver receita — ICMS/ISS do calcComp3 precisam da divisão DESSE trimestre, mesmo quando um dos lados é zero
       detalhePorTrimestre[chave] = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, lucroQAjustado, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ, g.meses.length);
       if (metodoSuspensaoAtivoLado){
         // calcularDetalhadoTrimestreEspecificoC3 aplica o limiar TRIMESTRAL do adicional (R$60.000)
@@ -6639,13 +6639,34 @@ function gerarMemoriaCalculoC3(mesesOrdenados, opcoes){
         let icmsValor;
         if (icmsManualAtivoMC){
           icmsValor = g.meses.reduce((s,m)=> s + (window.icmsManualPorMesC3[m.mes+'/'+m.ano]||0), 0);
+          html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);">
+            <div class="line"><span>ICMS líquido (informado manualmente)</span><span>${fmt(icmsValor)}</span></div>
+          </div>`;
         } else {
+          // Mesma fórmula do calcComp3: débito só sobre a receita de Comércio/Indústria × alíquota de
+          // débito; crédito só sobre compras de mercadorias (valor mensal × nº real de meses do
+          // trimestre) × % fornecedores Presumido/Real × alíquota de crédito.
           const icmsDebitoAliqMC = parseFloat(document.getElementById('icmsDebitoAliq_c3').value)||0;
-          icmsValor = receitaTrimestre * (icmsDebitoAliqMC/100);
+          const icmsCreditoAliqMC = parseFloat(document.getElementById('icmsAliq_c3').value)||0;
+          const pctRPComprasMC = parseFloat(document.getElementById('pctCreditoRPCompras_c3').value)||0;
+          const escalaMC = statePeriodicidadeC3==='trimestral' ? 3 : (statePeriodicidadeC3==='anual' ? 12 : 1);
+          const comprasTrimestreMC = Math.max(0, getMoney('comprasValor_c3')) / escalaMC * g.meses.length;
+          const pctSimplesComprasMC = parseFloat(document.getElementById('pctCreditoSimplesCompras_c3').value)||0;
+          const icmsDebitoMC = receitaComercio * (icmsDebitoAliqMC/100);
+          const icmsCreditoRPMC = comprasTrimestreMC * (pctRPComprasMC/100) * (icmsCreditoAliqMC/100);
+          const icmsCreditoSimplesMC = comprasTrimestreMC * (pctSimplesComprasMC/100) * 0.0295;
+          const icmsCreditoMC = icmsCreditoRPMC + icmsCreditoSimplesMC;
+          icmsValor = Math.max(0, icmsDebitoMC - icmsCreditoMC);
+          const icmsSaldoCredorMC = Math.max(0, icmsCreditoMC - icmsDebitoMC);
+          html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);">
+            <div style="font-weight:600;">ICMS do trimestre</div>
+            <div class="line"><span>Débito ICMS (${icmsDebitoAliqMC}% s/ receita Com./Ind. ${fmt(receitaComercio)})</span><span>${fmt(icmsDebitoMC)}</span></div>
+            <div class="line"><span>(–) Crédito ICMS — fornecedores Presumido/Real (compras ${fmt(comprasTrimestreMC)} × ${pctRPComprasMC}% × ${icmsCreditoAliqMC}%)</span><span>${fmt(icmsCreditoRPMC)}</span></div>
+            ${icmsCreditoSimplesMC > 0.005 ? `<div class="line"><span>(–) Crédito ICMS — fornecedores Simples (compras × ${pctSimplesComprasMC}% × 2,95% fixo)</span><span>${fmt(icmsCreditoSimplesMC)}</span></div>` : ''}
+            <div class="line" style="font-weight:700;"><span>ICMS líquido do trimestre</span><span>${fmt(icmsValor)}</span></div>
+            ${icmsSaldoCredorMC > 0.5 ? `<div class="line" style="color:var(--acc,#0a7a3d);"><span>Saldo credor de ICMS a compensar</span><span>${fmt(icmsSaldoCredorMC)}</span></div>` : ''}
+          </div>`;
         }
-        html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);">
-          <div class="line"><span>ICMS líquido ${icmsManualAtivoMC ? '(informado manualmente)' : `(${document.getElementById('icmsDebitoAliq_c3').value}% s/ receita)`}</span><span>${fmt(icmsValor)}</span></div>
-        </div>`;
       }
       if (temIssAtivo){
         const issManualAtivoMC = document.getElementById('issManualCheck_c3').checked;
@@ -6654,10 +6675,10 @@ function gerarMemoriaCalculoC3(mesesOrdenados, opcoes){
           issValor = g.meses.reduce((s,m)=> s + (window.issManualPorMesC3[m.mes+'/'+m.ano]||0), 0);
         } else {
           const issAliqMC = parseFloat(document.getElementById('issAliq_c3').value)||0;
-          issValor = receitaTrimestre * (issAliqMC/100);
+          issValor = receitaServico * (issAliqMC/100); // ISS só sobre a receita de Serviços
         }
         html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);">
-          <div class="line"><span>ISS ${issManualAtivoMC ? '(informado manualmente)' : `(${document.getElementById('issAliq_c3').value}% s/ receita)`}</span><span>${fmt(issValor)}</span></div>
+          <div class="line"><span>ISS ${issManualAtivoMC ? '(informado manualmente)' : `(${document.getElementById('issAliq_c3').value}% s/ receita de Serviços ${fmt(receitaServico)})`}</span><span>${fmt(issValor)}</span></div>
         </div>`;
       }
     }
@@ -7017,7 +7038,6 @@ function calcComp3(){
   const creditoComprasRP = comprasUnico*(pctCreditoRPCompras/100); // sujeito ao redutor da atividade (CBS/IBS)
   const creditoDespesasRP = despesasUnico*(pctCreditoRPDespesas/100); // NÃO sujeito ao redutor — gastos gerais/PJ
   const creditoBaseRP = creditoComprasRP + creditoDespesasRP; // usado para ICMS (sem redutor de atividade)
-  const icmsCompras = creditoBaseRP;
   const pctDasEst = parseFloat(document.getElementById('pctDasEstimadoCompras_c3').value)||0;
   // Crédito de CBS/IBS sobre compras/despesas tem DOIS componentes com fórmulas DIFERENTES (não podem
   // ser somados numa única base e depois multiplicados pela alíquota de CBS/IBS inteira):
@@ -7257,20 +7277,33 @@ function calcComp3(){
   }
 
   // ---- ICMS líquido (Real e Presumido) ----
-  const icmsDebito = receitaTotalComLocacao * (icmsDebitoAliq/100);
-  // Fórmula revista: o crédito de ICMS tem DOIS componentes, como no CBS/IBS —
-  // 1) Compras/despesas de fornecedores do Real/Presumido: crédito pleno pela alíquota de crédito
-  //    informada (icmsAliq) — igual já era.
-  // 2) Compras/despesas de fornecedores do Simples Nacional: esses fornecedores não destacam ICMS
-  //    "normal" na nota, então usa uma alíquota FIXA de 2,95% sobre essa parcela (valor de mercado
-  //    aproximado do ICMS embutido no DAS do fornecedor Simples — SEM PRECISÃO OFICIAL, é uma
-  //    estimativa; sempre confirme com o contador se a alíquota real for diferente).
-  // O valor de ICMS que vinha do PDF de entradas por CFOP (icmsCreditoReal_c3) NÃO é mais usado
-  // aqui — o crédito agora vem sempre desta fórmula, calculada mês a mês sobre compras e despesas.
-  const creditoBaseSimplesICMS = comprasUnico*(pctCreditoSimplesCompras/100) + despesasUnico*(pctCreditoSimplesDespesas/100);
-  const ALIQUOTA_FIXA_ICMS_SIMPLES = 2.95; // fixo — avisar o usuário, não é uma alíquota oficial única
-  const icmsCreditoSimples = creditoBaseSimplesICMS * (ALIQUOTA_FIXA_ICMS_SIMPLES/100);
-  const icmsCredito = (icmsCompras * (icmsAliq/100)) + icmsCreditoSimples;
+  // Débito: SÓ sobre a receita de Comércio/Indústria (venda de mercadorias) × alíquota do quadro
+  // "ICMS Débito" — a receita de Serviços não entra (ela vai pro ISS). Mesma separação usada pro ISS
+  // mais abaixo: usa a divisão do trimestre específico (visão detalhada/mês a mês), senão os campos
+  // por Anexo da tela, senão a receita inteira quando a única atividade é Comércio/Indústria.
+  const ANEXO_TIPO_ICMS = { I:'comercio', II:'comercio', III:'servico', IV:'servico', V:'servico' };
+  let receitaComercioParaICMS;
+  if (window.splitComercioServicoAtualC3){
+    receitaComercioParaICMS = window.splitComercioServicoAtualC3.comercio / escalaPeriodo;
+  } else {
+    const inputsAnexoICMS = Array.from(document.querySelectorAll('#receitasPorAnexoWrap_c3 input[data-anexo]'));
+    if (inputsAnexoICMS.length >= 2){
+      let somaComercio = 0;
+      inputsAnexoICMS.forEach(inp=>{ if (ANEXO_TIPO_ICMS[inp.dataset.anexo] === 'comercio') somaComercio += Math.max(0, paraNumeroBR(inp.value)); });
+      receitaComercioParaICMS = somaComercio / escalaPeriodo;
+    } else {
+      receitaComercioParaICMS = isComercioC3 ? receitaTotalComLocacao : 0;
+    }
+  }
+  const icmsDebito = receitaComercioParaICMS * (icmsDebitoAliq/100);
+  // Crédito: SÓ sobre compras de mercadorias/matérias-primas (Gastos Gerais não geram crédito de
+  // ICMS), em duas parcelas: (1) fornecedores do Real/Presumido × alíquota do quadro "ICMS Crédito";
+  // (2) fornecedores do Simples Nacional × 2,95% fixo (estimativa do ICMS embutido no DAS deles).
+  // Ex.: compras R$99.441,02 × 90% × 12% = R$10.739,63 + R$99.441,02 × 10% × 2,95% = R$293,35.
+  const ALIQUOTA_FIXA_ICMS_SIMPLES = 2.95;
+  const icmsCreditoRP = comprasUnico * (pctCreditoRPCompras/100) * (icmsAliq/100);
+  const icmsCreditoSimples = comprasUnico * (pctCreditoSimplesCompras/100) * (ALIQUOTA_FIXA_ICMS_SIMPLES/100);
+  const icmsCredito = icmsCreditoRP + icmsCreditoSimples;
   const icmsSaldoCredor = Math.max(0, icmsCredito - icmsDebito);
   let icmsLiquido = Math.max(0, icmsDebito - icmsCredito);
   // "Deseja informar o valor do ICMS Devido mensal?" — se marcado, soma o que foi digitado mês a mês
@@ -7308,7 +7341,11 @@ function calcComp3(){
     const inputsAnexoISS = Array.from(document.querySelectorAll('#receitasPorAnexoWrap_c3 input[data-anexo]'));
     const ANEXO_TIPO_ISS = { I:'comercio', II:'comercio', III:'servico', IV:'servico', V:'servico' };
     let receitaServicoParaISS;
-    if (inputsAnexoISS.length >= 2){
+    if (window.splitComercioServicoAtualC3){
+      // Visão detalhada/mês a mês: divisão do trimestre específico (não a dos campos da tela, que só
+      // guardam o último trimestre-calendário com dados).
+      receitaServicoParaISS = window.splitComercioServicoAtualC3.servico / escalaPeriodo;
+    } else if (inputsAnexoISS.length >= 2){
       // Campos por Anexo já vêm no valor do período (trimestre-calendário atual), não mensal-equivalente
       let somaServico = 0;
       inputsAnexoISS.forEach(inp=>{
