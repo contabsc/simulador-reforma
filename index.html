@@ -1933,7 +1933,7 @@ const CNAE_LIST = [
 // Número da versão atual do app — atualizar aqui a cada nova versão publicada. Usado tanto no rótulo
 // visível na tela (pra conferir se o que está no ar bate com o que foi publicado no Git) quanto no
 // arquivo de backup exportado (campo "versaoApp"), sem precisar mudar em dois lugares separados.
-const VERSAO_APP = 'v383';
+const VERSAO_APP = 'v384';
 document.getElementById('versaoAppLabel').textContent = '· ' + VERSAO_APP;
 
 const ANEXOS = {
@@ -2962,7 +2962,10 @@ function calcularSimplesViaMotorTab1(mesesC3){
   apuracaoMensalState.projecaoST = apuracaoMensalStateC3.projecaoST;
 
   const tempEl = document.createElement('div');
-  const totais = renderizarTabelaApuracao(mesesC3, tempEl, false, 'temp');
+  window.hibridoApuracaoTrimestralC3 = true;
+  let totais;
+  try { totais = renderizarTabelaApuracao(mesesC3, tempEl, false, 'temp'); }
+  finally { delete window.hibridoApuracaoTrimestralC3; }
 
   state.anexo = salvo.anexo; state.anexosAtivos = salvo.anexosAtivos; state.anexoIIITransporte = salvo.anexoIIITransporte;
   state.periodo = salvo.periodo;
@@ -3404,6 +3407,33 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
       dasMes: totalAMes, hibridoMes, creditoA: parteSubstituida, creditoACbs: creditoCbsMes, creditoAIbs: creditoIbsMes, creditoB: debitoCbsIbs,
       dasReduzido, debitoCbsIbs, creditoCompras, sublimiteExcedidoMes };
   });
+  // Aba 2 (comparativo): o CBS/IBS do Híbrido é apurado por TRIMESTRE-CALENDÁRIO, com o saldo credor
+  // transportado pro trimestre seguinte — exatamente a mesma regra do Presumido/Real (calcComp3 via
+  // calcularDetalhadoTrimestreEspecificoC3). Sem isso, um mês de receita baixa "perdia" o crédito
+  // excedente (zerava o mês sem transportar nada) e o CBS/IBS do Híbrido ficava maior que o do
+  // Presumido/Real pra mesma receita, mesmas compras e mesma alíquota. O líquido do trimestre é
+  // distribuído entre os meses na proporção do débito de cada um. Só roda quando chamado pela Aba 2
+  // (window.hibridoApuracaoTrimestralC3) — a Aba 1 continua mês a mês, como sempre.
+  if (window.hibridoApuracaoTrimestralC3){
+    const trimestreDe = l => Math.floor(ORDEM_MESES_PT.indexOf(l.mes)/3) + 1 + '-' + l.ano;
+    const gruposTri = {};
+    const ordemTri = [];
+    linhasCalculadas.forEach(l=>{ const k = trimestreDe(l); if (!gruposTri[k]){ gruposTri[k] = []; ordemTri.push(k); } gruposTri[k].push(l); });
+    ordemTri.sort((a,b)=>{ const [qa,ya]=a.split('-'); const [qb,yb]=b.split('-'); return ya!==yb ? ya-yb : qa-qb; });
+    let saldoCredorCarry = 0;
+    ordemTri.forEach(k=>{
+      const ls = gruposTri[k];
+      const debitoTri = ls.reduce((s,l)=>s+l.debitoCbsIbs,0);
+      const creditoTri = ls.reduce((s,l)=>s+l.creditoCompras+creditoEstoqueMensalParaHibrido,0);
+      const liquidoTri = Math.max(0, debitoTri - creditoTri - saldoCredorCarry);
+      saldoCredorCarry = Math.max(0, creditoTri + saldoCredorCarry - debitoTri);
+      ls.forEach(l=>{
+        const prop = debitoTri > 0 ? l.debitoCbsIbs/debitoTri : 1/ls.length;
+        l.liquidoCbsIbs = liquidoTri * prop;
+        l.hibridoMes = l.dasReduzido + l.liquidoCbsIbs;
+      });
+    });
+  }
   const totalReceita = linhasCalculadas.reduce((s,l)=>s+l.receitaMes,0);
   const totalDAS = linhasCalculadas.reduce((s,l)=>s+l.dasMes,0);
   const totalHibrido = linhasCalculadas.reduce((s,l)=>s+l.hibridoMes,0);
@@ -5749,6 +5779,7 @@ function calcularPresumidoRealPorTrimestreC3(mesesOrdenados){
     return ya!==yb ? ya-yb : qa-qb;
   });
   let prejuizoFiscalAcumulado = 0;
+  let cbsSaldoCarry = 0, ibsSaldoCarry = 0; // saldo credor de CBS/IBS transportado entre trimestres
   let acumuladoSuspensao = 0; // estado do Balanço de Suspensão — soma corrida dos deltas mensais, atravessa trimestres
   let irpjDevidoAcumuladoSuspensao = 0; // "top-up": o que já ficou devido em meses anteriores, pra não cobrar de novo
   let csllDevidoAcumuladoSuspensao = 0;
@@ -5794,8 +5825,11 @@ function calcularPresumidoRealPorTrimestreC3(mesesOrdenados){
 
     // Presumido não depende do lucro (usa % de presunção sobre a receita) — calcula uma vez com
     // lucroQ=0, comum aos dois métodos (Trimestral e Balanço de Suspensão), já que só o Real muda.
+    // Saldo credor de CBS/IBS do trimestre anterior entra na apuração deste (ordem cronológica).
+    window.cbsSaldoAnteriorC3 = cbsSaldoCarry; window.ibsSaldoAnteriorC3 = ibsSaldoCarry;
     const detalhePres = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, 0, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ, g.meses.length);
     const totalPresTrimestre = detalhePres.pres.total;
+    const cbsSaldoCarryProximo = window.cbsSaldoCredorResultadoC3 || 0, ibsSaldoCarryProximo = window.ibsSaldoCredorResultadoC3 || 0;
 
     if (!metodoSuspensaoAtivo){
       // Trimestral (padrão) — Real apurado por trimestre-calendário, igual o Presumido, mas com a
@@ -5867,6 +5901,8 @@ function calcularPresumidoRealPorTrimestreC3(mesesOrdenados){
         resultadoPorMes[chaveMes] = { totalPres: totalPresTrimestre*proporcaoPres, totalReal: totalRealMes };
       });
     }
+    cbsSaldoCarry = cbsSaldoCarryProximo; ibsSaldoCarry = ibsSaldoCarryProximo;
+    delete window.cbsSaldoAnteriorC3; delete window.ibsSaldoAnteriorC3;
   });
 
   return resultadoPorMes;
@@ -5986,6 +6022,7 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
         acumuladoPorMesLado[m.mes+'/'+m.ano] = acc;
       });
     }
+    let cbsSaldoCarryLado = 0, ibsSaldoCarryLado = 0; // saldo credor de CBS/IBS transportado entre trimestres
     chaves.forEach(chave=>{
       const g = grupos[chave];
       const lucroQ = metodoSuspensaoAtivoLado
@@ -6056,7 +6093,10 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
         }
       });
       const splitComercioServicoQ = (receitaComercioQ + receitaServicoQ) > 0.5 ? {comercio: receitaComercioQ, servico: receitaServicoQ} : null; // sempre que houver receita — ICMS/ISS do calcComp3 precisam da divisão DESSE trimestre, mesmo quando um dos lados é zero
+      window.cbsSaldoAnteriorC3 = cbsSaldoCarryLado; window.ibsSaldoAnteriorC3 = ibsSaldoCarryLado;
       detalhePorTrimestre[chave] = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, lucroQAjustado, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ, g.meses.length);
+      cbsSaldoCarryLado = window.cbsSaldoCredorResultadoC3 || 0; ibsSaldoCarryLado = window.ibsSaldoCredorResultadoC3 || 0;
+      delete window.cbsSaldoAnteriorC3; delete window.ibsSaldoAnteriorC3;
       if (metodoSuspensaoAtivoLado){
         // calcularDetalhadoTrimestreEspecificoC3 aplica o limiar TRIMESTRAL do adicional (R$60.000)
         // sobre o "lucroQ" já ajustado acima — mas o Balanço de Suspensão usa um limiar MENSAL
@@ -6556,6 +6596,7 @@ function gerarMemoriaCalculoC3(mesesOrdenados, opcoes){
   const finC3 = Math.max(0, getMoney('fin_c3'));
 
   let html = '';
+  let cbsSaldoCarryMemoria = 0, ibsSaldoCarryMemoria = 0; // saldo credor transportado entre trimestres (ordem cronológica)
   chaves.forEach(chave=>{
     const g = grupos[chave];
     const receitaTrimestre = g.meses.reduce((s,m)=>s+receitaTotalDoMesC3(m),0);
@@ -6737,14 +6778,16 @@ function gerarMemoriaCalculoC3(mesesOrdenados, opcoes){
       const ibsCreditoTrimestreMemoria = ibsCreditoMensalMemoria * g.meses.length;
 
       const cbsDebitoTrimestreMemoria = baseCbsIbsTrimestre * (cbsAliqMemoria/100) * fatorRedutorMemoria;
-      const cbsLiquidoTrimestreMemoria = Math.max(0, cbsDebitoTrimestreMemoria - cbsCreditoTrimestreMemoria);
-      const cbsSaldoCredorTrimestreMemoria = Math.max(0, cbsCreditoTrimestreMemoria - cbsDebitoTrimestreMemoria);
+      const cbsSaldoAnteriorMemoria = cbsSaldoCarryMemoria, ibsSaldoAnteriorMemoria = ibsSaldoCarryMemoria;
+      const cbsLiquidoTrimestreMemoria = Math.max(0, cbsDebitoTrimestreMemoria - cbsCreditoTrimestreMemoria - cbsSaldoAnteriorMemoria);
+      const cbsSaldoCredorTrimestreMemoria = Math.max(0, cbsCreditoTrimestreMemoria + cbsSaldoAnteriorMemoria - cbsDebitoTrimestreMemoria);
       let ibsDebitoTrimestreMemoria = 0, ibsLiquidoTrimestreMemoria = 0, ibsSaldoCredorTrimestreMemoria = 0;
       if (calcularIbsMemoria){
         ibsDebitoTrimestreMemoria = baseCbsIbsTrimestre * (ibsAliqMemoria/100) * fatorRedutorMemoria;
-        ibsLiquidoTrimestreMemoria = Math.max(0, ibsDebitoTrimestreMemoria - ibsCreditoTrimestreMemoria);
-        ibsSaldoCredorTrimestreMemoria = Math.max(0, ibsCreditoTrimestreMemoria - ibsDebitoTrimestreMemoria);
+        ibsLiquidoTrimestreMemoria = Math.max(0, ibsDebitoTrimestreMemoria - ibsCreditoTrimestreMemoria - ibsSaldoAnteriorMemoria);
+        ibsSaldoCredorTrimestreMemoria = Math.max(0, ibsCreditoTrimestreMemoria + ibsSaldoAnteriorMemoria - ibsDebitoTrimestreMemoria);
       }
+      cbsSaldoCarryMemoria = cbsSaldoCredorTrimestreMemoria; ibsSaldoCarryMemoria = ibsSaldoCredorTrimestreMemoria;
 
       html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);">
         <div style="font-weight:600;">CBS/IBS do trimestre (vale igual pro Presumido e pro Real — mesma base do Simples Híbrido)</div>
@@ -6757,6 +6800,9 @@ function gerarMemoriaCalculoC3(mesesOrdenados, opcoes){
       if (cbsCreditoTrimestreMemoria > 0.5){
         html += `<div class="line"><span>(–) Crédito CBS sobre compras/despesas</span><span>${fmt(cbsCreditoTrimestreMemoria)}</span></div>`;
       }
+      if (cbsSaldoAnteriorMemoria > 0.5){
+        html += `<div class="line"><span>(–) Saldo credor de CBS do trimestre anterior</span><span>${fmt(cbsSaldoAnteriorMemoria)}</span></div>`;
+      }
       html += `<div class="line" style="font-weight:700;"><span>CBS líquido do trimestre</span><span>${fmt(cbsLiquidoTrimestreMemoria)}</span></div>`;
       if (cbsSaldoCredorTrimestreMemoria > 0.5){
         html += `<div class="line" style="color:var(--acc,#0a7a3d);"><span>Saldo credor de CBS a compensar</span><span>${fmt(cbsSaldoCredorTrimestreMemoria)}</span></div>`;
@@ -6765,6 +6811,9 @@ function gerarMemoriaCalculoC3(mesesOrdenados, opcoes){
         html += `<div class="line" style="margin-top:4px;"><span>Débito IBS (${ibsAliqMemoria}%)</span><span>${fmt(ibsDebitoTrimestreMemoria)}</span></div>`;
         if (ibsCreditoTrimestreMemoria > 0.5){
           html += `<div class="line"><span>(–) Crédito IBS sobre compras/despesas</span><span>${fmt(ibsCreditoTrimestreMemoria)}</span></div>`;
+        }
+        if (ibsSaldoAnteriorMemoria > 0.5){
+          html += `<div class="line"><span>(–) Saldo credor de IBS do trimestre anterior</span><span>${fmt(ibsSaldoAnteriorMemoria)}</span></div>`;
         }
         html += `<div class="line" style="font-weight:700;"><span>IBS líquido do trimestre</span><span>${fmt(ibsLiquidoTrimestreMemoria)}</span></div>`;
         if (ibsSaldoCredorTrimestreMemoria > 0.5){
@@ -7442,8 +7491,13 @@ function calcComp3(){
   const cbsCreditoCompras = (creditoComprasRP * (cbsAliq/100) + creditoComprasFornecedorSimplesTotal * proporcaoCbsNoCredito) * fatorRedutorC3; // reduzido pelo redutor da atividade
   const cbsCreditoDespesas = (creditoDespesasRP * (cbsAliq/100) + creditoDespesasFornecedorSimplesTotal * proporcaoCbsNoCredito) * fatorRedutorC3; // idem — mesmo redutor da atividade se aplica às despesas
   const cbsCredito = cbsCreditoCompras + cbsCreditoDespesas;
-  const cbsSaldoCredor = Math.max(0, cbsCredito - cbsDebito);
-  const cbsLiquido = Math.max(0, cbsDebito - cbsCredito);
+  // Saldo credor vindo do trimestre anterior (visão detalhada/mês a mês, em ordem cronológica): o
+  // crédito de CBS/IBS que sobrou num trimestre é compensado no seguinte (não se perde). Valores
+  // aqui são mensais-equivalentes, por isso o saldo (valor do período) é dividido por escalaPeriodo.
+  const cbsSaldoAnterior = (window.cbsSaldoAnteriorC3 || 0) / escalaPeriodo;
+  const cbsSaldoCredor = Math.max(0, cbsCredito + cbsSaldoAnterior - cbsDebito);
+  const cbsLiquido = Math.max(0, cbsDebito - cbsCredito - cbsSaldoAnterior);
+  window.cbsSaldoCredorResultadoC3 = cbsSaldoCredor * escalaPeriodo;
 
   // ---- IBS líquido — só calcula quando ICMS e ISS estão desmarcados (mutuamente exclusivos: hoje é ICMS/ISS, ou já é IBS) ----
   const calcularIBS = !temIcms && !temIss;
@@ -7454,9 +7508,11 @@ function calcComp3(){
     ibsCreditoCompras = (creditoComprasRP * (ibsAliqC3/100) + creditoComprasFornecedorSimplesTotal * proporcaoIbsNoCredito) * fatorRedutorC3; // reduzido pelo redutor da atividade
     ibsCreditoDespesas = (creditoDespesasRP * (ibsAliqC3/100) + creditoDespesasFornecedorSimplesTotal * proporcaoIbsNoCredito) * fatorRedutorC3; // idem — mesmo redutor da atividade se aplica às despesas
     ibsCredito = ibsCreditoCompras + ibsCreditoDespesas;
-    ibsLiquido = Math.max(0, ibsDebito - ibsCredito);
-    ibsSaldoCredor = Math.max(0, ibsCredito - ibsDebito);
+    const ibsSaldoAnterior = (window.ibsSaldoAnteriorC3 || 0) / escalaPeriodo;
+    ibsLiquido = Math.max(0, ibsDebito - ibsCredito - ibsSaldoAnterior);
+    ibsSaldoCredor = Math.max(0, ibsCredito + ibsSaldoAnterior - ibsDebito);
   }
+  window.ibsSaldoCredorResultadoC3 = ibsSaldoCredor * escalaPeriodo;
   document.getElementById('c3_pres_ibs_row').style.display = calcularIBS ? 'flex' : 'none';
   document.getElementById('c3_real_ibs_row').style.display = calcularIBS ? 'flex' : 'none';
 
