@@ -1110,6 +1110,7 @@
           <span class="hint" id="progressoAnexoImportC3" style="display:block; margin-top:6px;"></span>
         </div>
         <div id="statusPdfReceitaMensalC3" class="hint" style="display:none; margin-top:4px;"></div>
+        <div id="importsHistoricoC3" style="display:none; margin-top:8px; padding:8px; border:1px dashed var(--line); border-radius:8px;"></div>
         <button type="button" id="btnLimparImportMensalC3" class="pdf-valor-btn" style="margin-top:10px;">Limpar importação</button>
       </details>
 
@@ -1933,7 +1934,7 @@ const CNAE_LIST = [
 // Número da versão atual do app — atualizar aqui a cada nova versão publicada. Usado tanto no rótulo
 // visível na tela (pra conferir se o que está no ar bate com o que foi publicado no Git) quanto no
 // arquivo de backup exportado (campo "versaoApp"), sem precisar mudar em dois lugares separados.
-const VERSAO_APP = 'v384';
+const VERSAO_APP = 'v387';
 document.getElementById('versaoAppLabel').textContent = '· ' + VERSAO_APP;
 
 const ANEXOS = {
@@ -2574,6 +2575,40 @@ let projecaoContadorLinhasC3 = 0;
 // Preenche os campos de Mensal, Trimestral e os 4 trimestres do Anual a partir de uma lista combinada de meses (PDF+projeção)
 const multiAnexoImportC1 = {};
 const multiAnexoImportC3 = {};
+// Receita importada POR ATIVIDADE na Aba 2 (ex.: "comercio" e "restauranteBar" são as duas Anexo I —
+// multiAnexoImportC3 soma tudo em "I" e perde a distinção, mas o redutor de CBS/IBS da atividade
+// (art. 261) só vale pra parte dela). Chave = id da atividade; valor = [{mes, ano, valor}].
+const multiAtividadeImportC3 = {};
+// Histórico dos PDFs de receita importados na Aba 2 (nome do arquivo, atividade/Anexo, tipo, nº de
+// meses) — mostrado na tela e salvo no backup, pra saber o que já foi importado ao recuperar.
+let importsHistoricoC3 = [];
+
+// Fator médio do redutor de CBS/IBS (art. 261) nos meses informados ("MES/ANO"), ponderado pela
+// receita de cada atividade importada: Σ receita_atividade × (1 − redutor) ÷ Σ receita. Retorna null
+// quando não há receita por atividade nesses meses (aí vale o redutor da atividade principal).
+function fatorRedutorEfetivoC3(chavesMeses){
+  const chaves = new Set(chavesMeses);
+  let total = 0, ponderado = 0;
+  Object.entries(multiAtividadeImportC3).forEach(([ativ, meses])=>{
+    const red = (typeof ATIVIDADES_C3 !== 'undefined' && ATIVIDADES_C3[ativ]) ? (ATIVIDADES_C3[ativ].redutor||0) : 0;
+    (meses||[]).forEach(m=>{
+      if (!chaves.has(m.mes+'/'+m.ano)) return;
+      const v = paraNumeroBR(m.valor);
+      total += v; ponderado += v * (1 - red/100);
+    });
+  });
+  return total > 0 ? ponderado/total : null;
+}
+
+function renderizarImportsHistoricoC3(){
+  const el = document.getElementById('importsHistoricoC3');
+  if (!el) return;
+  if (!importsHistoricoC3.length){ el.style.display = 'none'; el.innerHTML = ''; return; }
+  const tipoTxt = t => t==='iss' ? 'com retenção de ISS' : (t==='icms' ? 'com ST de ICMS' : 'receita normal');
+  el.style.display = 'block';
+  el.innerHTML = `<div style="font-weight:600; margin-bottom:4px;">Arquivos de receita importados</div>` +
+    importsHistoricoC3.map(h=>`<div class="line" style="font-size:12px;"><span>📄 ${h.arquivo}</span><span>${h.label} · ${tipoTxt(h.tipo)} · ${h.meses} ${h.meses===1?'mês':'meses'}</span></div>`).join('');
+}
 const multiAnexoSTC1 = {};
 const multiAnexoSTC3 = {};
 
@@ -2585,7 +2620,12 @@ function configurarImportacaoReceitaPeriodo(fileInputId, perguntaId, labelAnexoI
   document.getElementById(fileInputId).addEventListener('change', (e)=>{
     const file = e.target.files[0];
     if (!file) return;
-    const multi = anexosAtivosSetFn().size > 1;
+    // Pergunta "esse PDF é de qual receita?" quando há mais de um Anexo ativo OU, na Aba 2, mais de
+    // uma ATIVIDADE ativa — mesmo que as duas sejam do mesmo Anexo (ex.: "Comércio/Indústria" e
+    // "Restaurante e bar" são as duas Anexo I): sem a pergunta, as duas receitas se somavam sem
+    // distinção e o redutor de CBS/IBS do restaurante (40%) não tinha como valer só na parte dele.
+    const multiAtividadesC3 = fileInputId.endsWith('C3') && typeof stateAtividadesAtivasC3 !== 'undefined' && stateAtividadesAtivasC3.size > 1;
+    const multi = anexosAtivosSetFn().size > 1 || multiAtividadesC3;
     document.getElementById(labelAnexoId).style.display = multi ? 'block' : 'none';
     document.getElementById(selectAnexoId).style.display = multi ? 'block' : 'none';
     if (multi){
@@ -2609,7 +2649,7 @@ function configurarImportacaoReceitaPeriodo(fileInputId, perguntaId, labelAnexoI
           const anexoDaAtividade = (typeof ATIVIDADE_ANEXO_PADRAO_C3 !== 'undefined' ? ATIVIDADE_ANEXO_PADRAO_C3[atividade] : null) || '';
           // O value continua sendo o Anexo real (é o que o resto do sistema usa pra somar/calcular) —
           // só o TEXTO mostrado na tela é que vira o nome da atividade específica.
-          return `<option value="${anexoDaAtividade}">${nomeAtividade}</option>`;
+          return `<option value="${anexoDaAtividade}" data-atividade="${atividade}">${nomeAtividade}</option>`;
         }).join('');
       } else {
         document.getElementById(selectAnexoId).innerHTML = Array.from(anexosAtivosSetFn()).map(a=>{
@@ -2648,7 +2688,12 @@ function configurarImportacaoReceitaPeriodo(fileInputId, perguntaId, labelAnexoI
         window.temIpiPorAnexoC3 = window.temIpiPorAnexoC3 || {};
         window.temIpiPorAnexoC3['II'] = cbIpi ? cbIpi.checked : false;
       }
-      processarArquivoReceitaPeriodo(file, anexo, tipo, multi, fileInputId, perguntaId, progressoId, estadoAcumulado, estadoAcumuladoST, anexosAtivosSetFn, rbaId, aoConcluirReceita, aoConcluirST, limiteMeses);
+      const selEl = document.getElementById(selectAnexoId);
+      const opt = multi && selEl ? selEl.options[selEl.selectedIndex] : null;
+      const atividadeSel = opt && opt.dataset.atividade ? opt.dataset.atividade
+        : (fileInputId.endsWith('C3') && typeof stateAtividadesAtivasC3 !== 'undefined' && stateAtividadesAtivasC3.size === 1 ? Array.from(stateAtividadesAtivasC3)[0] : null);
+      const labelSel = opt ? opt.textContent : `Anexo ${anexo}`;
+      processarArquivoReceitaPeriodo(file, anexo, tipo, multi, fileInputId, perguntaId, progressoId, estadoAcumulado, estadoAcumuladoST, anexosAtivosSetFn, rbaId, aoConcluirReceita, aoConcluirST, limiteMeses, { atividade: atividadeSel, label: labelSel });
     };
   });
 }
@@ -2685,7 +2730,7 @@ function mesclarESomarMeses(mesesExistentes, mesesNovos){
   }));
 }
 
-async function processarArquivoReceitaPeriodo(file, anexo, tipo, multi, fileInputId, perguntaId, progressoId, estadoAcumulado, estadoAcumuladoST, anexosAtivosSetFn, rbaId, aoConcluirReceita, aoConcluirST, limiteMeses){
+async function processarArquivoReceitaPeriodo(file, anexo, tipo, multi, fileInputId, perguntaId, progressoId, estadoAcumulado, estadoAcumuladoST, anexosAtivosSetFn, rbaId, aoConcluirReceita, aoConcluirST, limiteMeses, extra){
   const progressoEl = document.getElementById(progressoId);
   progressoEl.textContent = 'Lendo o PDF...';
   try {
@@ -2720,6 +2765,14 @@ async function processarArquivoReceitaPeriodo(file, anexo, tipo, multi, fileInpu
     if (tipo !== 'normal'){
       estadoAcumuladoST[anexo] = mesclarESomarMeses(estadoAcumuladoST[anexo], demonstrativo.meses);
     }
+    if (fileInputId.endsWith('C3')){
+      // Guarda também POR ATIVIDADE (pro redutor de CBS/IBS valer só na parte da atividade que tem
+      // redutor) e registra o arquivo no histórico mostrado na tela/salvo no backup.
+      const ativ = extra && extra.atividade ? extra.atividade : null;
+      if (ativ) multiAtividadeImportC3[ativ] = mesclarESomarMeses(multiAtividadeImportC3[ativ], demonstrativo.meses);
+      importsHistoricoC3.push({ arquivo: file.name, anexo, atividade: ativ, label: (extra && extra.label) ? extra.label : `Anexo ${anexo}`, tipo, meses: demonstrativo.meses.length });
+      renderizarImportsHistoricoC3();
+    }
 
     const anexosComDados = Object.keys(estadoAcumulado);
     const tipoLabel = tipo==='normal' ? 'receita normal' : (tipo==='iss' ? 'com retenção de ISS' : 'com substituição de ICMS');
@@ -2736,7 +2789,9 @@ async function processarArquivoReceitaPeriodo(file, anexo, tipo, multi, fileInpu
         avisoPresuncaoMista = ` Atenção: você importou receita de Anexos com presunção diferente pro Lucro Presumido (comércio/indústria = 8% IRPJ/12% CSLL, serviços = 32%/32%) — o cálculo já pondera automaticamente a % certa pra cada parte, sem misturar tudo numa só.`;
       }
     }
-    progressoEl.textContent = `Anexo ${anexo} (${tipoLabel}): +${demonstrativo.meses.length} meses somados a esse Anexo (total do Anexo agora: ${fmt(totalDoAnexoAgora)}). Já importado: ${anexosComDados.join(', ')}.` + (multi ? ' Escolha o próximo arquivo, se faltar algum Anexo (ou outra parte do mesmo Anexo).' : '') + avisoPresuncaoMista;
+    const nomeOrigem = (extra && extra.label) ? extra.label : `Anexo ${anexo}`;
+    const jaImportado = (fileInputId.endsWith('C3') && importsHistoricoC3.length) ? [...new Set(importsHistoricoC3.map(h=>h.label))].join(', ') : anexosComDados.join(', ');
+    progressoEl.textContent = `${nomeOrigem} (${tipoLabel}): +${demonstrativo.meses.length} meses (total do Anexo ${anexo} agora: ${fmt(totalDoAnexoAgora)}). Já importado: ${jaImportado}.` + (multi ? ' Escolha o próximo arquivo, se faltar alguma receita (ou outra parte da mesma).' : '') + avisoPresuncaoMista;
 
     const totalGeral = Object.values(estadoAcumulado).reduce((s,meses)=> s+meses.reduce((s2,m)=>s2+paraNumeroBR(m.valor),0), 0);
     if (rbaId) { document.getElementById(rbaId).value = totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); document.getElementById(rbaId).dispatchEvent(new Event('input')); }
@@ -2963,9 +3018,10 @@ function calcularSimplesViaMotorTab1(mesesC3){
 
   const tempEl = document.createElement('div');
   window.hibridoApuracaoTrimestralC3 = true;
+  window.hibridoFatorRedutorC3 = 1 - ((ATIVIDADES_C3[stateAtividadeC3] ? ATIVIDADES_C3[stateAtividadeC3].redutor : 0)/100);
   let totais;
   try { totais = renderizarTabelaApuracao(mesesC3, tempEl, false, 'temp'); }
-  finally { delete window.hibridoApuracaoTrimestralC3; }
+  finally { delete window.hibridoApuracaoTrimestralC3; delete window.hibridoFatorRedutorC3; }
 
   state.anexo = salvo.anexo; state.anexosAtivos = salvo.anexosAtivos; state.anexoIIITransporte = salvo.anexoIIITransporte;
   state.periodo = salvo.periodo;
@@ -3399,7 +3455,14 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
       faixaLabel = f.idx;
     }
     const dasReduzido = totalAMes - parteSubstituida;
-    const debitoCbsIbs = receitaMes * ((cbsRateAtual+ibsRateAtual)/100);
+    // Aba 2: redutor da atividade (art. 261 — ex.: restaurante/bar 40%) reduz a alíquota de SAÍDA do
+    // Híbrido, igual ao Presumido/Real; o crédito das entradas continua pela alíquota cheia.
+    let fatorRedutorSaida = window.hibridoFatorRedutorC3 !== undefined ? window.hibridoFatorRedutorC3 : 1;
+    if (window.hibridoFatorRedutorC3 !== undefined && typeof fatorRedutorEfetivoC3 === 'function'){
+      const fEf = fatorRedutorEfetivoC3([mes.mes+'/'+mes.ano]);
+      if (fEf !== null) fatorRedutorSaida = fEf;
+    }
+    const debitoCbsIbs = receitaMes * ((cbsRateAtual+ibsRateAtual)/100) * fatorRedutorSaida;
     const creditoCompras = creditoBaseAtual * ((cbsRateAtual+ibsRateAtual)/100) + creditoComprasFornecedorSimplesParaHibrido;
     const liquidoCbsIbs = Math.max(0, debitoCbsIbs - creditoCompras - creditoEstoqueMensalParaHibrido);
     const hibridoMes = dasReduzido + liquidoCbsIbs;
@@ -4718,6 +4781,8 @@ document.getElementById('btnLimparAtividadeC3').addEventListener('click', ()=>{
   apuracaoMensalStateC3.periodoST = null; apuracaoMensalStateC3.projecaoST = null;
   Object.keys(multiAnexoImportC3).forEach(k=> delete multiAnexoImportC3[k]);
   Object.keys(multiAnexoSTC3).forEach(k=> delete multiAnexoSTC3[k]);
+  Object.keys(multiAtividadeImportC3).forEach(k=> delete multiAtividadeImportC3[k]);
+  importsHistoricoC3 = []; renderizarImportsHistoricoC3();
   stateProjecaoC3 = null;
   document.getElementById('perguntaProjecaoC3').style.display = 'none';
   // Compras/despesas, seus percentuais de crédito e "valor pago em 2026" NÃO entram nessa lista —
@@ -5827,6 +5892,7 @@ function calcularPresumidoRealPorTrimestreC3(mesesOrdenados){
     // lucroQ=0, comum aos dois métodos (Trimestral e Balanço de Suspensão), já que só o Real muda.
     // Saldo credor de CBS/IBS do trimestre anterior entra na apuração deste (ordem cronológica).
     window.cbsSaldoAnteriorC3 = cbsSaldoCarry; window.ibsSaldoAnteriorC3 = ibsSaldoCarry;
+    window.fatorRedutorEfetivoAtualC3 = fatorRedutorEfetivoC3(g.meses);
     const detalhePres = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, 0, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ, g.meses.length);
     const totalPresTrimestre = detalhePres.pres.total;
     const cbsSaldoCarryProximo = window.cbsSaldoCredorResultadoC3 || 0, ibsSaldoCarryProximo = window.ibsSaldoCredorResultadoC3 || 0;
@@ -5902,7 +5968,7 @@ function calcularPresumidoRealPorTrimestreC3(mesesOrdenados){
       });
     }
     cbsSaldoCarry = cbsSaldoCarryProximo; ibsSaldoCarry = ibsSaldoCarryProximo;
-    delete window.cbsSaldoAnteriorC3; delete window.ibsSaldoAnteriorC3;
+    delete window.cbsSaldoAnteriorC3; delete window.ibsSaldoAnteriorC3; delete window.fatorRedutorEfetivoAtualC3;
   });
 
   return resultadoPorMes;
@@ -6094,9 +6160,10 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
       });
       const splitComercioServicoQ = (receitaComercioQ + receitaServicoQ) > 0.5 ? {comercio: receitaComercioQ, servico: receitaServicoQ} : null; // sempre que houver receita — ICMS/ISS do calcComp3 precisam da divisão DESSE trimestre, mesmo quando um dos lados é zero
       window.cbsSaldoAnteriorC3 = cbsSaldoCarryLado; window.ibsSaldoAnteriorC3 = ibsSaldoCarryLado;
+      window.fatorRedutorEfetivoAtualC3 = fatorRedutorEfetivoC3(g.meses);
       detalhePorTrimestre[chave] = calcularDetalhadoTrimestreEspecificoC3(g.receita, g.receitaST, lucroQAjustado, finQ, icmsManualQ, issManualQ, {ano: g.ano, q: g.q}, splitComercioServicoQ, g.meses.length);
       cbsSaldoCarryLado = window.cbsSaldoCredorResultadoC3 || 0; ibsSaldoCarryLado = window.ibsSaldoCredorResultadoC3 || 0;
-      delete window.cbsSaldoAnteriorC3; delete window.ibsSaldoAnteriorC3;
+      delete window.cbsSaldoAnteriorC3; delete window.ibsSaldoAnteriorC3; delete window.fatorRedutorEfetivoAtualC3;
       if (metodoSuspensaoAtivoLado){
         // calcularDetalhadoTrimestreEspecificoC3 aplica o limiar TRIMESTRAL do adicional (R$60.000)
         // sobre o "lucroQ" já ajustado acima — mas o Balanço de Suspensão usa um limiar MENSAL
@@ -6734,7 +6801,8 @@ function gerarMemoriaCalculoC3(mesesOrdenados, opcoes){
       const cbsAliqMemoria = parseFloat(document.getElementById('cbsAliq_c3').value)||0;
       const ibsAliqMemoria = parseFloat(document.getElementById('ibsAliq_c3').value)||0;
       const redutorAtividadeMemoria = ATIVIDADES_C3[stateAtividadeC3].redutor;
-      const fatorRedutorMemoria = 1 - (redutorAtividadeMemoria/100);
+      const fatorEfetivoMemoria = fatorRedutorEfetivoC3(g.meses.map(m=>m.mes+'/'+m.ano));
+      const fatorRedutorMemoria = fatorEfetivoMemoria !== null ? fatorEfetivoMemoria : 1 - (redutorAtividadeMemoria/100);
 
       // Receita imune/isenta do trimestre — mesmo padrão da "receita financeira" acima: mês a mês
       // quando marcado, valor único replicado por mês do trimestre quando não, ou a receita inteira
@@ -6770,10 +6838,11 @@ function gerarMemoriaCalculoC3(mesesOrdenados, opcoes){
       const somaAliqMemoria = cbsAliqMemoria + ibsAliqMemoria;
       const proporcaoCbsMemoria = somaAliqMemoria > 0 ? cbsAliqMemoria/somaAliqMemoria : 0.5;
       const proporcaoIbsMemoria = 1 - proporcaoCbsMemoria;
-      const cbsCreditoMensalMemoria = ((creditoComprasRPMemoria + creditoDespesasRPMemoria) * (cbsAliqMemoria/100)
-        + (creditoComprasSimplesTotalMemoria+creditoDespesasSimplesTotalMemoria)*proporcaoCbsMemoria) * fatorRedutorMemoria;
-      const ibsCreditoMensalMemoria = ((creditoComprasRPMemoria + creditoDespesasRPMemoria) * (ibsAliqMemoria/100)
-        + (creditoComprasSimplesTotalMemoria+creditoDespesasSimplesTotalMemoria)*proporcaoIbsMemoria) * fatorRedutorMemoria;
+      // Crédito pela alíquota cheia (o redutor da atividade reduz só o débito de saída).
+      const cbsCreditoMensalMemoria = (creditoComprasRPMemoria + creditoDespesasRPMemoria) * (cbsAliqMemoria/100)
+        + (creditoComprasSimplesTotalMemoria+creditoDespesasSimplesTotalMemoria)*proporcaoCbsMemoria;
+      const ibsCreditoMensalMemoria = (creditoComprasRPMemoria + creditoDespesasRPMemoria) * (ibsAliqMemoria/100)
+        + (creditoComprasSimplesTotalMemoria+creditoDespesasSimplesTotalMemoria)*proporcaoIbsMemoria;
       const cbsCreditoTrimestreMemoria = cbsCreditoMensalMemoria * g.meses.length;
       const ibsCreditoTrimestreMemoria = ibsCreditoMensalMemoria * g.meses.length;
 
@@ -6796,7 +6865,7 @@ function gerarMemoriaCalculoC3(mesesOrdenados, opcoes){
         html += `<div class="line"><span>(–) Receita imune/isenta</span><span>${fmt(imuneTrimestreMemoria)}</span></div>`;
       }
       html += `<div class="line" style="font-weight:600;"><span>Base de cálculo CBS/IBS</span><span>${fmt(baseCbsIbsTrimestre)}</span></div>
-        <div class="line"><span>Débito CBS (${cbsAliqMemoria}%${fatorRedutorMemoria<1 ? ` × ${(fatorRedutorMemoria*100).toFixed(2)}% (redutor da atividade)` : ''})</span><span>${fmt(cbsDebitoTrimestreMemoria)}</span></div>`;
+        <div class="line"><span>Débito CBS (${cbsAliqMemoria}%${fatorRedutorMemoria<1 ? ` × ${(fatorRedutorMemoria*100).toFixed(2)}% (redutor da atividade${fatorEfetivoMemoria !== null ? ', ponderado pela receita de cada atividade' : ''})` : ''})</span><span>${fmt(cbsDebitoTrimestreMemoria)}</span></div>`;
       if (cbsCreditoTrimestreMemoria > 0.5){
         html += `<div class="line"><span>(–) Crédito CBS sobre compras/despesas</span><span>${fmt(cbsCreditoTrimestreMemoria)}</span></div>`;
       }
@@ -7266,8 +7335,9 @@ function calcComp3(){
     // dão crédito só pelo "% do DAS estimado" (já é o valor final, sem multiplicar pela alíquota de
     // novo — a fórmula anterior ignorava por completo a parte Real/Presumido e ainda multiplicava a
     // parte Simples pela alíquota uma segunda vez).
-    const creditoCbsIbsHibrido = ((creditoComprasRP + creditoDespesasRP) * ((cbsAliq+ibsAliqHibrido)/100)
-      + (creditoComprasFornecedorSimplesTotal + creditoDespesasFornecedorSimplesTotal)) * fatorRedutorAtividadeHibrido;
+    // Crédito das entradas pela alíquota cheia — o redutor da atividade só reduz a saída (débito).
+    const creditoCbsIbsHibrido = (creditoComprasRP + creditoDespesasRP) * ((cbsAliq+ibsAliqHibrido)/100)
+      + (creditoComprasFornecedorSimplesTotal + creditoDespesasFornecedorSimplesTotal);
     // Crédito de transição do estoque (LC 214/2025): estoque em 31/12/2026 × alíquota de CBS/IBS =
     // crédito TOTAL, usado em 12 parcelas mensais iguais — SEMPRE dividido por 12, independente do
     // período calculado aqui ter mais ou menos meses.
@@ -7411,7 +7481,11 @@ function calcComp3(){
 
   // ---- Redutor CBS/IBS da atividade (percentual sobre a alíquota, art. 261) ----
   const redutorAtividade = ATIVIDADES_C3[stateAtividadeC3].redutor;
-  const fatorRedutorC3 = 1 - (redutorAtividade/100);
+  // Visão detalhada/mês a mês: fator ponderado pela receita de cada atividade importada no trimestre
+  // (ex.: 40% só sobre a parte de restaurante/bar, 0% sobre o comércio geral). Sem receita por
+  // atividade, vale o redutor da atividade principal sobre tudo (comportamento de sempre).
+  const fatorRedutorC3 = (window.fatorRedutorEfetivoAtualC3 !== undefined && window.fatorRedutorEfetivoAtualC3 !== null)
+    ? window.fatorRedutorEfetivoAtualC3 : 1 - (redutorAtividade/100);
 
   // ---- Redutor social: locação residencial (R$600/mês, art.260) · imóvel residencial novo (R$100mil, art.259) · lote residencial (R$30mil, art.259) ----
   const REDUTOR_SOCIAL_DEFAULTS = { locacaoResidencial: 600, imovel: 100000, lotes: 30000 };
@@ -7488,8 +7562,10 @@ function calcComp3(){
   // proporcionalmente às suas alíquotas, pra a soma bater exatamente com esse valor único.
   const somaAliqCbsIbs = cbsAliq + ibsAliqC3;
   const proporcaoCbsNoCredito = somaAliqCbsIbs > 0 ? cbsAliq/somaAliqCbsIbs : 0.5;
-  const cbsCreditoCompras = (creditoComprasRP * (cbsAliq/100) + creditoComprasFornecedorSimplesTotal * proporcaoCbsNoCredito) * fatorRedutorC3; // reduzido pelo redutor da atividade
-  const cbsCreditoDespesas = (creditoDespesasRP * (cbsAliq/100) + creditoDespesasFornecedorSimplesTotal * proporcaoCbsNoCredito) * fatorRedutorC3; // idem — mesmo redutor da atividade se aplica às despesas
+  // O redutor da atividade (art. 261) reduz só a ALÍQUOTA DE SAÍDA (débito sobre a venda) — o crédito
+  // das entradas é o imposto destacado pelo fornecedor, pela alíquota cheia, e NÃO sofre redução.
+  const cbsCreditoCompras = creditoComprasRP * (cbsAliq/100) + creditoComprasFornecedorSimplesTotal * proporcaoCbsNoCredito;
+  const cbsCreditoDespesas = creditoDespesasRP * (cbsAliq/100) + creditoDespesasFornecedorSimplesTotal * proporcaoCbsNoCredito;
   const cbsCredito = cbsCreditoCompras + cbsCreditoDespesas;
   // Saldo credor vindo do trimestre anterior (visão detalhada/mês a mês, em ordem cronológica): o
   // crédito de CBS/IBS que sobrou num trimestre é compensado no seguinte (não se perde). Valores
@@ -7505,8 +7581,8 @@ function calcComp3(){
   if (calcularIBS){
     const proporcaoIbsNoCredito = 1 - proporcaoCbsNoCredito;
     ibsDebito = baseCbsIbsComRedutorSocial * (ibsAliqC3/100) * fatorRedutorC3;
-    ibsCreditoCompras = (creditoComprasRP * (ibsAliqC3/100) + creditoComprasFornecedorSimplesTotal * proporcaoIbsNoCredito) * fatorRedutorC3; // reduzido pelo redutor da atividade
-    ibsCreditoDespesas = (creditoDespesasRP * (ibsAliqC3/100) + creditoDespesasFornecedorSimplesTotal * proporcaoIbsNoCredito) * fatorRedutorC3; // idem — mesmo redutor da atividade se aplica às despesas
+    ibsCreditoCompras = creditoComprasRP * (ibsAliqC3/100) + creditoComprasFornecedorSimplesTotal * proporcaoIbsNoCredito; // sem redutor — só a saída é reduzida
+    ibsCreditoDespesas = creditoDespesasRP * (ibsAliqC3/100) + creditoDespesasFornecedorSimplesTotal * proporcaoIbsNoCredito;
     ibsCredito = ibsCreditoCompras + ibsCreditoDespesas;
     const ibsSaldoAnterior = (window.ibsSaldoAnteriorC3 || 0) / escalaPeriodo;
     ibsLiquido = Math.max(0, ibsDebito - ibsCredito - ibsSaldoAnterior);
@@ -8560,6 +8636,8 @@ document.getElementById('btnLimparImportMensalC3').addEventListener('click', ()=
   apuracaoMensalStateC3.periodoST = null; apuracaoMensalStateC3.projecaoST = null;
   Object.keys(multiAnexoImportC3).forEach(k=> delete multiAnexoImportC3[k]);
   Object.keys(multiAnexoSTC3).forEach(k=> delete multiAnexoSTC3[k]);
+  Object.keys(multiAtividadeImportC3).forEach(k=> delete multiAtividadeImportC3[k]);
+  importsHistoricoC3 = []; renderizarImportsHistoricoC3();
   ['rbt12_c3','rba_c3','receita_c3',
    'receitaTrimestral_c3','receitaSTTrimestral_c3',
    'trim1_c3','trim2_c3','trim3_c3','trim4_c3','receitaSTTrim1_c3','receitaSTTrim2_c3','receitaSTTrim3_c3','receitaSTTrim4_c3',
@@ -8789,6 +8867,7 @@ function exportarSimulacao(){
       apuracaoMensalState,
       apuracaoMensalStateC3,
       multiAnexoImportC1, multiAnexoImportC3, multiAnexoSTC1, multiAnexoSTC3,
+      multiAtividadeImportC3, importsHistoricoC3,
       // % ISS e valor ICMS informados manualmente por mês (quadro "informar % ISS/ICMS por mês") —
       // sem isso aqui, esses valores se perdiam ao salvar e recarregar a simulação, voltando pra
       // alíquota fixa genérica em vez da % real de cada mês.
@@ -8855,6 +8934,10 @@ function importarSimulacao(file){
       if (est.multiAnexoImportC3) Object.assign(multiAnexoImportC3, est.multiAnexoImportC3);
       if (est.multiAnexoSTC1) Object.assign(multiAnexoSTC1, est.multiAnexoSTC1);
       if (est.multiAnexoSTC3) Object.assign(multiAnexoSTC3, est.multiAnexoSTC3);
+      Object.keys(multiAtividadeImportC3).forEach(k=> delete multiAtividadeImportC3[k]);
+      if (est.multiAtividadeImportC3) Object.assign(multiAtividadeImportC3, est.multiAtividadeImportC3);
+      importsHistoricoC3 = Array.isArray(est.importsHistoricoC3) ? est.importsHistoricoC3 : [];
+      renderizarImportsHistoricoC3();
       if (est.icmsManualPorMesC3) window.icmsManualPorMesC3 = est.icmsManualPorMesC3;
       if (est.issManualPorMesC3) window.issManualPorMesC3 = est.issManualPorMesC3;
       if (est.lucroManualPorMesC3) window.lucroManualPorMesC3 = est.lucroManualPorMesC3;
