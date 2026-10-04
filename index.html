@@ -369,6 +369,24 @@
     line-height:1.3;
   }
   .atividade-tabs button.active{background:var(--teal-strong);border-color:var(--teal-strong);color:#fff;}
+  /* Atividades da Aba 2: grade com colunas iguais (lado a lado), nome em cima e o % de redução de
+     CBS/IBS em negrito embaixo — mesmo tamanho pra todas as caixas. */
+  #atividadeC3Tabs{display:flex;flex-direction:column;flex-wrap:nowrap;gap:6px;}
+  /* Um grupo por faixa de redução de CBS/IBS: título + fundo suave (a cor indica o percentual) */
+  .ativ-grupo{border-radius:10px;padding:6px 7px 7px;border:1px solid var(--line);background:var(--g-bg,#f6f5f1);}
+  .ativ-grupo-titulo{display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.02em;color:var(--g-ink,#444);margin:0 0 5px 2px;}
+  .ativ-grupo-titulo .pct{display:inline-block;padding:1px 7px;border-radius:999px;background:var(--g-chip,#ddd);color:#fff;font-size:10px;}
+  .ativ-grupo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:5px;}
+  .ativ-grupo-grid button{display:flex;flex-direction:column;justify-content:space-between;gap:3px;min-height:40px;padding:5px 7px;font-size:10.5px;line-height:1.2;background:#fff;}
+  .ativ-grupo-grid button.active{background:var(--teal-strong);border-color:var(--teal-strong);color:#fff;}
+  .ativ-g0{--g-bg:#f4f4f2;--g-ink:#5a5a5a;--g-chip:#8a8a8a;}
+  .ativ-g30{--g-bg:#eef3fb;--g-ink:#2f5a9a;--g-chip:#4a78c2;}
+  .ativ-g40{--g-bg:#fbf3e4;--g-ink:#8a5a12;--g-chip:#c98a2a;}
+  .ativ-g50{--g-bg:#f3eefb;--g-ink:#5e3f9a;--g-chip:#8464c2;}
+  .ativ-g60{--g-bg:#ecf6ee;--g-ink:#2c6b3c;--g-chip:#3f9a57;}
+  .ativ-g70{--g-bg:#e8f5f5;--g-ink:#1f6a6a;--g-chip:#2f8f8f;}
+  .ativ-g100{--g-bg:#fbeef0;--g-ink:#8a2f3c;--g-chip:#c24a5c;}
+  #atividadeC3Tabs button .ativ-nome{display:block;overflow-wrap:break-word;}
   .redutor-tag{
     display:inline-block;margin:2px 0 6px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;
     color:var(--credit);background:var(--credit-dim);padding:3px 9px;border-radius:20px;
@@ -491,7 +509,7 @@
     <button class="tabbtn" id="tabbtn-comp3" onclick="showTab('comp3')">Simples × Real × Presumido</button>
   </div>
 </div>
-<div class="wrap" style="padding-bottom:0">
+<div class="wrap" style="padding-bottom:0; display:none;" id="painelClienteWrap">
   <div class="panel" style="padding:16px 22px;">
     <div class="row2">
       <div>
@@ -546,7 +564,6 @@
       <div class="notice" id="cnaeAvisoNaoEncontrado" style="display:none; margin-bottom:10px;">CNAE não encontrado na lista representativa — selecione o Anexo manualmente abaixo e confirme com o contador.</div>
       <div class="notice" id="impeditivoSimplesAviso" style="display:none; margin-bottom:10px;"></div>
       <button type="button" class="pdf-valor-btn" id="btnImportarDaAba2" style="margin-top:4px; margin-bottom:10px;">↔ Importar dados da Aba 2 (Comparativo)</button>
-      <span class="hint" id="hintImportarDaAba2" style="display:block; margin-top:-6px; margin-bottom:10px;">traz CNPJ/CNAE, cliente, RBT12/RBA, Anexo(s) e a receita mensal já importada na Aba 2</span>
       <button type="button" class="pdf-valor-btn" id="btnLimparAtividade" style="margin-top:4px; margin-bottom:10px;">Limpar atividade</button>
 
       <div id="fatorRWrap" style="display:none; margin-bottom:10px;">
@@ -867,14 +884,7 @@
     <div class="panel">
       <h2>Dados da empresa</h2>
 
-      <label>Atividade
-        <span class="hint">ajusta presunção de IRPJ/CSLL, marca ICMS ou ISS, e aplica o redutor de CBS/IBS da atividade</span>
-      </label>
-      <div class="atividade-tabs" id="atividadeC3Tabs"></div>
-      <span class="redutor-tag" id="redutorTagC3">—</span>
-      <span class="hint" id="atividadeContagemC3" style="display:block; margin-top:4px;"></span>
-
-      <label style="margin-top:14px">CNPJ (obrigatório)
+      <label style="margin-top:0">CNPJ (obrigatório)
         <span class="hint">busca automática das atividades cadastradas na Receita Federal, pra sugerir o Anexo — preenche também o Nome/CNPJ do cliente no topo</span>
       </label>
       <div class="row2">
@@ -889,13 +899,20 @@
       <div id="atividadesCnpjC3" style="display:none; margin-top:8px; margin-bottom:10px;"></div>
 
       <label style="margin-top:14px">CNAE (opcional)
-        <span class="hint">busca já filtrada pela Atividade selecionada acima (comércio/indústria mostra só CNAEs de ICMS; serviços mostra só CNAEs de ISS/Fator R)</span>
+        <span class="hint">busca já filtrada pela Atividade selecionada abaixo (comércio/indústria mostra só CNAEs de ICMS; serviços mostra só CNAEs de ISS/Fator R)</span>
       </label>
       <input type="text" id="cnaeInputC3" placeholder="ex.: 4711-3/02 ou 'padaria'" autocomplete="off">
       <div id="cnaeResultadosC3" style="display:none; margin-bottom:10px;"></div>
       <div class="notice" id="cnaeAvisoNaoEncontradoC3" style="display:none; margin-bottom:10px;">CNAE não encontrado na lista representativa — selecione o Anexo manualmente abaixo e confirme com o contador.</div>
+
+      <label style="margin-top:14px">Atividade
+        <span class="hint">ajusta presunção de IRPJ/CSLL, marca ICMS ou ISS, e aplica o redutor de CBS/IBS da atividade</span>
+      </label>
+      <div class="atividade-tabs" id="atividadeC3Tabs"></div>
+      <span class="redutor-tag" id="redutorTagC3">—</span>
+      <span class="hint" id="atividadeContagemC3" style="display:block; margin-top:4px;"></span>
+
       <button type="button" class="pdf-valor-btn" id="btnImportarDaAba1" style="margin-top:4px; margin-bottom:10px;">↔ Importar dados da Aba 1 (Simples)</button>
-      <span class="hint" id="hintImportarDaAba1" style="display:block; margin-top:-6px; margin-bottom:10px;">traz CNPJ/CNAE, cliente, RBT12/RBA, Anexo(s) e a receita mensal já importada na Aba 1</span>
       <button type="button" class="pdf-valor-btn" id="btnLimparAtividadeC3" style="margin-top:4px; margin-bottom:10px;">Limpar atividade</button>
 
       <div id="simplesAnexoWrap_c3">
@@ -957,7 +974,6 @@
         <input type="checkbox" id="verMesAMesC3" style="width:auto;">
         Ver mês a mês (em vez de agrupado por trimestre)
       </label>
-      <span class="hint" style="display:block; margin-top:-4px;">mostra cada mês importado em uma linha, com o total de cada regime — formato mais simples, sem o detalhamento por imposto (ICMS/ISS/CBS/IBS/INSS)</span>
       <div class="notice" id="perguntaProjecaoC3" style="display:none; margin-top:10px;">
         <div id="textoPerguntaProjecaoC3"></div>
         <div style="display:flex; gap:8px; margin-top:10px;">
@@ -1934,7 +1950,7 @@ const CNAE_LIST = [
 // Número da versão atual do app — atualizar aqui a cada nova versão publicada. Usado tanto no rótulo
 // visível na tela (pra conferir se o que está no ar bate com o que foi publicado no Git) quanto no
 // arquivo de backup exportado (campo "versaoApp"), sem precisar mudar em dois lugares separados.
-const VERSAO_APP = 'v387';
+const VERSAO_APP = 'v394';
 document.getElementById('versaoAppLabel').textContent = '· ' + VERSAO_APP;
 
 const ANEXOS = {
@@ -2060,6 +2076,16 @@ function onPeriodoChangeC3(periodoId){
   }
 }
 
+
+// Painel "Nome / CNPJ do cliente" (topo da tela) só aparece depois que a busca de CNPJ preencheu o
+// nome ou o CNPJ — vazio, ele só ocupava espaço e confundia (os campos nem são editáveis).
+function atualizarPainelClienteVisivel(){
+  const wrap = document.getElementById('painelClienteWrap');
+  if (!wrap) return;
+  const nome = (document.getElementById('clienteNome')?.value || '').trim();
+  const cnpj = (document.getElementById('clienteCnpj')?.value || '').trim();
+  wrap.style.display = (nome || cnpj) ? 'block' : 'none';
+}
 const fmt = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const pct = v => v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
 
@@ -2853,18 +2879,10 @@ function preencherTodasPeriodicidadesC3(meses){
     document.getElementById('rbt12_c3').value = paraTexto(rbt12Base);
   }
 
-  // Detecta automaticamente o período (2026/2027/2029/2033) pelo ano dos dados importados,
-  // pra aplicar a alíquota de CBS/IBS correta da fase de transição — o IBS só entra de fato em 2029.
-  // Só faz isso se o usuário não tiver escolhido manualmente um período pelo seletor.
-  if (!apuracaoMensalStateC3.periodoManualC3){
-    const anoMaisRecenteC3 = ultimoMes.ano;
-    const periodoDetectadoC3 = PERIODOS.find(p => p.id === detectarPeriodoPorAno(anoMaisRecenteC3));
-    if (periodoDetectadoC3){
-      document.getElementById('cbsAliq_c3').value = periodoDetectadoC3.cbs;
-      document.getElementById('ibsAliq_c3').value = periodoDetectadoC3.ibs;
-      buildPeriodosC3();
-    }
-  }
+  // O período de "Alíquotas fora do DAS" NÃO é mais detectado automaticamente pelo ano dos meses
+  // importados (isso trocava o seletor sozinho pra "2026 — fase de teste", com CBS zero, toda vez
+  // que se limpava e reimportava receita de 2026). Fica fixo em "2027–2028 — transição inicial" ao
+  // abrir o sistema e só muda quando o usuário clicar no seletor.
 
   // Mensal: usa a MÉDIA do período (não só o último mês) como base representativa — o total de
   // Presumido/Real é reescalado logo abaixo pra refletir o período inteiro, e não só 1 mês.
@@ -4512,6 +4530,7 @@ async function buscarAtividadesPorCNPJ(){
     const dados = await resp.json();
     document.getElementById('clienteNome').value = dados.razao_social || '';
     document.getElementById('clienteCnpj').value = formatarCNPJVisual(cnpj);
+    atualizarPainelClienteVisivel();
     state.clienteNome = document.getElementById('clienteNome').value;
     state.clienteCnpj = document.getElementById('clienteCnpj').value;
     const atividades = [];
@@ -4629,6 +4648,7 @@ async function buscarAtividadesPorCNPJC3(){
     const dados = await resp.json();
     document.getElementById('clienteNome').value = dados.razao_social || '';
     document.getElementById('clienteCnpj').value = formatarCNPJVisual(cnpj);
+    atualizarPainelClienteVisivel();
     state3.clienteNome = document.getElementById('clienteNome').value;
     state3.clienteCnpj = document.getElementById('clienteCnpj').value;
     const atividades = [];
@@ -4715,6 +4735,7 @@ document.getElementById('btnLimparAtividade').addEventListener('click', ()=>{
   document.getElementById('cnaeAvisoNaoEncontrado').style.display = 'none';
   document.getElementById('clienteNome').value = '';
   document.getElementById('clienteCnpj').value = '';
+  atualizarPainelClienteVisivel();
   state.clienteNome = ''; state.clienteCnpj = '';
   // limpa também a seleção de Anexo, já que ela era definida a partir da atividade/CNAE
   state.anexo = 'I'; state.anexosAtivos = new Set(['I']); state.anexoIIITransporte = false;
@@ -4760,6 +4781,7 @@ document.getElementById('btnLimparAtividadeC3').addEventListener('click', ()=>{
   document.getElementById('cnaeAvisoNaoEncontradoC3').style.display = 'none';
   document.getElementById('clienteNome').value = '';
   document.getElementById('clienteCnpj').value = '';
+  atualizarPainelClienteVisivel();
   state3.clienteNome = ''; state3.clienteCnpj = '';
   // limpa também a atividade (inclusive locação residencial/comercial, se estiver marcada), o
   // combo de locação e a receita informada nele, e o redutor social — tudo volta ao padrão (comércio)
@@ -4845,6 +4867,7 @@ function showTab(name){
   abaAtivaClienteC3 = name==='comp3' ? 'comp3' : 'simples';
   document.getElementById('clienteNome').value = (abaAtivaClienteC3==='simples' ? state.clienteNome : state3.clienteNome) || '';
   document.getElementById('clienteCnpj').value = (abaAtivaClienteC3==='simples' ? state.clienteCnpj : state3.clienteCnpj) || '';
+  atualizarPainelClienteVisivel();
 }
 
 /* ---------- Tab 3: Simples x Real x Presumido (pós-2027) ---------- */
@@ -4983,22 +5006,31 @@ const ATIVIDADES_C3 = {
   comercio: { nome:"Comércio/Indústria", presIrpj:8, presCsll:12, tributo:"icms", redutor:0, ratPct:1 },
   servico:  { nome:"Serviços gerais", presIrpj:32, presCsll:32, tributo:"iss", redutor:0, ratPct:1 },
   regulamentado: { nome:"Profissão regulamentada (30%)", presIrpj:32, presCsll:32, tributo:"iss", redutor:30, ratPct:1 },
-  saude:    { nome:"Saúde/Educação (60%)", presIrpj:8, presCsll:12, tributo:"iss", redutor:60, ratPct:2 },
+  saude:    { nome:"Hospitais, laboratórios e serviços de saúde (60%)", presIrpj:8, presCsll:12, tributo:"iss", redutor:60, ratPct:2 },
   locacaoResidencial: { nome:"Locação residencial (70%)", presIrpj:32, presCsll:32, tributo:"nenhum", redutor:70, ratPct:1, impeditivoSimples:"Art. 17, XV, da LC 123/2006 — locação de imóveis próprios é vedada ao Simples Nacional." },
   locacaoComercial:   { nome:"Locação comercial (70%)", presIrpj:32, presCsll:32, tributo:"nenhum", redutor:70, ratPct:1, impeditivoSimples:"Art. 17, XV, da LC 123/2006 — locação de imóveis próprios é vedada ao Simples Nacional." },
   imovel:   { nome:"Venda/Incorporação de imóveis (50%)", presIrpj:8, presCsll:12, tributo:"nenhum", redutor:50, ratPct:1, impeditivoSimples:"Art. 17, XIV, da LC 123/2006 — incorporação de imóveis é vedada ao Simples Nacional." },
   lotes:    { nome:"Venda de lotes (residencial e comercial)", presIrpj:8, presCsll:12, tributo:"nenhum", redutor:50, ratPct:1, impeditivoSimples:"Art. 17, XIV, da LC 123/2006 — loteamento de imóveis é vedado ao Simples Nacional." },
-  intermediacaoImobiliaria: { nome:"Administração/intermediação imobiliária", presIrpj:32, presCsll:32, tributo:"iss", redutor:0, ratPct:1 },
-  bancoFinanceira: { nome:"Banco/instituição financeira", presIrpj:16, presCsll:12, tributo:"nenhum", redutor:0, ratPct:1, impeditivoSimples:"Art. 17, I, da LC 123/2006 — bancos comerciais, de investimento e de desenvolvimento, caixas econômicas e demais instituições financeiras são vedados ao Simples Nacional." },
-  cooperativaCredito: { nome:"Cooperativa de crédito", presIrpj:16, presCsll:12, tributo:"nenhum", redutor:0, ratPct:1, impeditivoSimples:"Art. 17, I, da LC 123/2006 — cooperativas de crédito são vedadas ao Simples Nacional." },
-  corretoraValores: { nome:"Corretora/distribuidora de valores mobiliários, câmbio", presIrpj:16, presCsll:12, tributo:"iss", redutor:0, ratPct:1, impeditivoSimples:"Art. 17, II, da LC 123/2006 — corretoras e distribuidoras de títulos, valores mobiliários e câmbio são vedadas ao Simples Nacional." },
-  seguradora: { nome:"Seguradora/previdência privada", presIrpj:16, presCsll:12, tributo:"nenhum", redutor:0, ratPct:1, impeditivoSimples:"Art. 17, III, da LC 123/2006 — empresas de seguros privados e de capitalização, e entidades de previdência privada aberta, são vedadas ao Simples Nacional." },
-  factoring: { nome:"Factoring/fomento mercantil", presIrpj:32, presCsll:32, tributo:"iss", redutor:0, ratPct:1, impeditivoSimples:"Art. 17, XXVII (e Art. 3º, §4º, VIII), da LC 123/2006 — empresas que exerçam factoring/fomento comercial são vedadas ao Simples Nacional." },
+  intermediacaoImobiliaria: { oculta:true, nome:"Administração/intermediação imobiliária", presIrpj:32, presCsll:32, tributo:"iss", redutor:0, ratPct:1 },
+  bancoFinanceira: { oculta:true, nome:"Banco/instituição financeira", presIrpj:16, presCsll:12, tributo:"nenhum", redutor:0, ratPct:1, impeditivoSimples:"Art. 17, I, da LC 123/2006 — bancos comerciais, de investimento e de desenvolvimento, caixas econômicas e demais instituições financeiras são vedados ao Simples Nacional." },
+  cooperativaCredito: { oculta:true, nome:"Cooperativa de crédito", presIrpj:16, presCsll:12, tributo:"nenhum", redutor:0, ratPct:1, impeditivoSimples:"Art. 17, I, da LC 123/2006 — cooperativas de crédito são vedadas ao Simples Nacional." },
+  corretoraValores: { oculta:true, nome:"Corretora/distribuidora de valores mobiliários, câmbio", presIrpj:16, presCsll:12, tributo:"iss", redutor:0, ratPct:1, impeditivoSimples:"Art. 17, II, da LC 123/2006 — corretoras e distribuidoras de títulos, valores mobiliários e câmbio são vedadas ao Simples Nacional." },
+  seguradora: { oculta:true, nome:"Seguradora/previdência privada", presIrpj:16, presCsll:12, tributo:"nenhum", redutor:0, ratPct:1, impeditivoSimples:"Art. 17, III, da LC 123/2006 — empresas de seguros privados e de capitalização, e entidades de previdência privada aberta, são vedadas ao Simples Nacional." },
+  factoring: { oculta:true, nome:"Factoring/fomento mercantil", presIrpj:32, presCsll:32, tributo:"iss", redutor:0, ratPct:1, impeditivoSimples:"Art. 17, XXVII (e Art. 3º, §4º, VIII), da LC 123/2006 — empresas que exerçam factoring/fomento comercial são vedadas ao Simples Nacional." },
   alimentos: { nome:"Alimentos (consumo humano, 60%)", presIrpj:8, presCsll:12, tributo:"icms", redutor:60, ratPct:1 },
   frutasVerduras: { nome:"Frutas e verduras (alíquota zero)", presIrpj:8, presCsll:12, tributo:"icms", redutor:100, ratPct:1 },
   hotelaria: { nome:"Hotelaria/Hospedagem (40%)", presIrpj:32, presCsll:32, tributo:"iss", redutor:40, ratPct:2 },
   restauranteBar: { nome:"Restaurante e bar (40%)", presIrpj:8, presCsll:12, tributo:"icms", redutor:40, ratPct:2 },
-  eventos: { nome:"Parques de diversão e eventos (40%)", presIrpj:32, presCsll:32, tributo:"iss", redutor:40, ratPct:2 }
+  eventos: { nome:"Parques de diversão e eventos (40%)", presIrpj:32, presCsll:32, tributo:"iss", redutor:40, ratPct:2 },
+  // Demais atividades com redução de CBS/IBS na LC 214/2025 (art. 273 — 60%; arts. 274/277 — 30%/40%)
+  clinicasMedicas: { nome:"Clínicas médicas, odontológicas e consultórios (60%)", presIrpj:32, presCsll:32, tributo:"iss", redutor:60, ratPct:2 },
+  educacao: { nome:"Educação — escolas, cursos e ensino (60%)", presIrpj:32, presCsll:32, tributo:"iss", redutor:60, ratPct:1 },
+  medicamentos: { nome:"Medicamentos e dispositivos médicos (60%)", presIrpj:8, presCsll:12, tributo:"icms", redutor:60, ratPct:1 },
+  higieneLimpeza: { nome:"Higiene pessoal e limpeza — consumo popular (60%)", presIrpj:8, presCsll:12, tributo:"icms", redutor:60, ratPct:1 },
+  agroInNatura: { nome:"Produtos agropecuários in natura e insumos (60%)", presIrpj:8, presCsll:12, tributo:"icms", redutor:60, ratPct:1 },
+  culturaJornalismo: { nome:"Produções artísticas, culturais, jornalísticas e audiovisuais (60%)", presIrpj:32, presCsll:32, tributo:"iss", redutor:60, ratPct:1 },
+  atividadesDesportivas: { nome:"Atividades desportivas (60%)", presIrpj:32, presCsll:32, tributo:"iss", redutor:60, ratPct:1 },
+  agenciaTurismo: { nome:"Agências de turismo (40%)", presIrpj:32, presCsll:32, tributo:"iss", redutor:40, ratPct:1 }
 };
 let stateAtividadeC3 = "comercio";
 
@@ -5104,7 +5136,9 @@ const ATIVIDADE_ANEXO_PADRAO_C3 = {
   intermediacaoImobiliaria:'III', bancoFinanceira:'I', cooperativaCredito:'I',
   corretoraValores:'III', seguradora:'I', factoring:'III',
   alimentos:'I', frutasVerduras:'I',
-  hotelaria:'III', restauranteBar:'I', eventos:'III'
+  hotelaria:'III', restauranteBar:'I', eventos:'III',
+  clinicasMedicas:'III', educacao:'III', medicamentos:'I', higieneLimpeza:'I', agroInNatura:'I',
+  culturaJornalismo:'III', atividadesDesportivas:'III', agenciaTurismo:'III'
 };
 // Presunção padrão do Lucro Presumido por Anexo — Anexo I/II (comércio/indústria) usa 8%/12%
 // (IRPJ/CSLL); Anexo III/IV/V (serviços em geral) usa 32%/32%. Serve pra achar a presunção correta
@@ -5164,6 +5198,7 @@ function importarDadosDaAba2ParaAba1(){
   // Cliente e identificação
   document.getElementById('clienteNome').value = document.getElementById('clienteNome')?.value || state3.clienteNome || '';
   document.getElementById('clienteCnpj').value = document.getElementById('clienteCnpj')?.value || state3.clienteCnpj || '';
+  atualizarPainelClienteVisivel();
   const cnpjC3Val = document.getElementById('cnpjInputC3').value.trim();
   if (cnpjC3Val) document.getElementById('cnpjInput').value = cnpjC3Val;
   const cnaeC3Val = document.getElementById('cnaeInputC3').value.trim();
@@ -5226,6 +5261,7 @@ function importarDadosDaAba1ParaAba2(){
   const cnpjClienteVal = document.getElementById('clienteCnpj')?.value.trim();
   if (nomeVal) document.getElementById('clienteNome').value = nomeVal;
   if (cnpjClienteVal) document.getElementById('clienteCnpj').value = cnpjClienteVal;
+  atualizarPainelClienteVisivel();
   const cnpjVal = document.getElementById('cnpjInput').value.trim();
   if (cnpjVal) document.getElementById('cnpjInputC3').value = cnpjVal;
   const cnaeVal = document.getElementById('cnaeInput').value.trim();
@@ -5347,17 +5383,38 @@ function atualizarLabelProjecaoTipoC3(){
 function buildAtividadeC3Tabs(){
   const el = document.getElementById('atividadeC3Tabs');
   el.innerHTML = '';
+  // Agrupa por faixa de redução de CBS/IBS (0, 30, 40, 50, 60, 70, 100%) — cada grupo com título e
+  // fundo próprio, pra cor significar o percentual, não uma linha arbitrária da grade.
+  const grupos = {};
   Object.keys(ATIVIDADES_C3).forEach(k=>{
-    const b = document.createElement('button');
-    b.textContent = ATIVIDADES_C3[k].nome;
-    b.className = stateAtividadesAtivasC3.has(k) ? 'active' : '';
-    b.onclick = ()=>{
-      toggleAtividadeC3(k);
-      document.getElementById('cnaeInputC3').value = '';
-      document.getElementById('cnaeResultadosC3').style.display = 'none';
-      document.getElementById('cnaeAvisoNaoEncontradoC3').style.display = 'none';
-    };
-    el.appendChild(b);
+    const a = ATIVIDADES_C3[k];
+    // Atividades sem redução de CBS/IBS que só existem por presunção/impedimento do Simples (banco,
+    // seguradora, factoring...) ficam fora da grade — só aparecem se já estiverem marcadas (backup).
+    if (a.oculta && !stateAtividadesAtivasC3.has(k)) return;
+    const red = a.redutor || 0;
+    (grupos[red] = grupos[red] || []).push(k);
+  });
+  Object.keys(grupos).map(Number).sort((x,y)=>x-y).forEach(red=>{
+    const wrap = document.createElement('div');
+    wrap.className = 'ativ-grupo ativ-g' + red;
+    wrap.innerHTML = `<div class="ativ-grupo-titulo"><span class="pct">${red}%</span>${red===0 ? 'Sem redução de CBS/IBS' : `Redução de ${red}% no CBS/IBS`}</div><div class="ativ-grupo-grid"></div>`;
+    const grid = wrap.querySelector('.ativ-grupo-grid');
+    grupos[red].forEach(k=>{
+      const a = ATIVIDADES_C3[k];
+      const b = document.createElement('button');
+      const nomeLimpo = a.nome.replace(/\s*\((\d+%|alíquota zero)\)\s*$/i, '').replace(/,\s*\d+%\)\s*$/, ')');
+      b.innerHTML = `<span class="ativ-nome">${nomeLimpo.replace(/\//g,'/\u200b')}</span>`;
+      b.title = `${a.nome} — redução de ${red}% no CBS/IBS`;
+      b.className = stateAtividadesAtivasC3.has(k) ? 'active' : '';
+      b.onclick = ()=>{
+        toggleAtividadeC3(k);
+        document.getElementById('cnaeInputC3').value = '';
+        document.getElementById('cnaeResultadosC3').style.display = 'none';
+        document.getElementById('cnaeAvisoNaoEncontradoC3').style.display = 'none';
+      };
+      grid.appendChild(b);
+    });
+    el.appendChild(wrap);
   });
   document.getElementById('redutorTagC3').textContent = `Redutor CBS/IBS da atividade: ${ATIVIDADES_C3[stateAtividadeC3].redutor}%`;
   const atividadesContagem = document.getElementById('atividadeContagemC3');
@@ -8925,6 +8982,7 @@ function importarSimulacao(file){
       // o painel de Nome/CNPJ é único na tela — mostra o valor da aba que estiver ativa no momento
       document.getElementById('clienteNome').value = (abaAtivaClienteC3==='simples' ? state.clienteNome : state3.clienteNome) || '';
       document.getElementById('clienteCnpj').value = (abaAtivaClienteC3==='simples' ? state.clienteCnpj : state3.clienteCnpj) || '';
+      atualizarPainelClienteVisivel();
       if (est.stateAtividadeC3) stateAtividadeC3 = est.stateAtividadeC3;
       if (est.stateAtividadesAtivasC3) stateAtividadesAtivasC3 = new Set(est.stateAtividadesAtivasC3);
       if (est.statePeriodicidadeC3) statePeriodicidadeC3 = (est.statePeriodicidadeC3 === 'semestral' || est.statePeriodicidadeC3 === 'trimestral') ? 'mensal' : est.statePeriodicidadeC3;
