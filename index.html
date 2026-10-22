@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DAS × Híbrido — Simulador CBS/IBS no Simples Nacional</title>
+<title>Simulador Tributário — Simples × Presumido × Real (Reforma Tributária)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -515,7 +515,9 @@
     </div>
   </div>
 </div>
-<div class="tabbar">
+<!-- Aba 1 (Simples DAS × Híbrido) desativada na v398: a Aba 2 já cobre tudo. O HTML dela fica no
+     documento, invisível, porque o motor de cálculo mensal do Simples lê alguns campos dela. -->
+<div class="tabbar" style="display:none;">
   <div class="tabbar-inner">
     <button class="tabbtn active" id="tabbtn-simples" onclick="showTab('simples')">Simples Nacional · DAS × Híbrido</button>
     <button class="tabbtn" id="tabbtn-comp3" onclick="showTab('comp3')">Simples × Real × Presumido</button>
@@ -539,7 +541,7 @@
     </div>
   </div>
 </div>
-<div class="wrap view active" id="view-simples">
+<div class="wrap view" id="view-simples" style="display:none !important;">
 
   <div class="eyebrow">Reforma Tributária · LC 214/2025 &amp; LC 227/2026</div>
   <h1>DAS por dentro ou CBS/IBS por fora?</h1>
@@ -575,7 +577,7 @@
       <div id="cnaeResultados" style="display:none; margin-bottom:10px;"></div>
       <div class="notice" id="cnaeAvisoNaoEncontrado" style="display:none; margin-bottom:10px;">CNAE não encontrado na lista representativa — selecione o Anexo manualmente abaixo e confirme com o contador.</div>
       <div class="notice" id="impeditivoSimplesAviso" style="display:none; margin-bottom:10px;"></div>
-      <button type="button" class="pdf-valor-btn" id="btnImportarDaAba2" style="margin-top:4px; margin-bottom:10px;">↔ Importar dados da Aba 2 (Comparativo)</button>
+      <button type="button" class="pdf-valor-btn" id="btnImportarDaAba2" style="display:none; margin-top:4px; margin-bottom:10px;">↔ Importar dados da Aba 2 (Comparativo)</button>
       <button type="button" class="pdf-valor-btn" id="btnLimparAtividade" style="margin-top:4px; margin-bottom:10px;">Limpar atividade</button>
 
       <div id="fatorRWrap" style="display:none; margin-bottom:10px;">
@@ -799,6 +801,10 @@
             </div>
           </div>
         </div>
+        <label style="margin-top:10px">Redução da alíquota de CBS/IBS pela atividade (%)
+          <span class="hint">art. 261 da LC 214/2025 — ex.: profissão regulamentada 30%, saúde/educação 60%, bares e restaurantes 40%. Só reduz o débito de saída do Híbrido; o crédito das compras fica pela alíquota cheia. "Importar dados da Aba 2" preenche com o redutor da atividade escolhida lá.</span>
+        </label>
+        <input type="number" id="redutorCbsIbs_c1" value="0" step="1" min="0" max="100" style="max-width:140px;">
         <div class="row2" style="margin-top:10px">
           <div>
             <label style="margin-top:0">CBS (%)</label>
@@ -901,10 +907,10 @@
   </div>
 </div>
 
-<div class="wrap view" id="view-comp3">
+<div class="wrap view active" id="view-comp3">
 
   <div class="eyebrow">Reforma Tributária · pós-2027 · LC 214/2025</div>
-  <h1>Simples × Real × Presumido, lado a lado</h1>
+  <h1>Simulador tributário — Simples × Presumido × Real</h1>
 
   <div class="notice">
     <b>Modelo simplificado de transição.</b> Em 2027, ICMS e ISS ainda respondem pela maior parte da tributação sobre consumo (a redução de fato começa a ganhar peso a partir de 2029), enquanto a CBS já substitui o PIS/COFINS integralmente. Ajuste as alíquotas de ICMS/ISS/CBS abaixo conforme a realidade do cliente e o cronograma vigente — os valores padrão são estimativas.
@@ -942,7 +948,7 @@
       <span class="redutor-tag" id="redutorTagC3">—</span>
       <span class="hint" id="atividadeContagemC3" style="display:block; margin-top:4px;"></span>
 
-      <button type="button" class="pdf-valor-btn" id="btnImportarDaAba1" style="margin-top:4px; margin-bottom:10px;">↔ Importar dados da Aba 1 (Simples)</button>
+      <button type="button" class="pdf-valor-btn" id="btnImportarDaAba1" style="display:none; margin-top:4px; margin-bottom:10px;">↔ Importar dados da Aba 1 (Simples)</button>
       <button type="button" class="pdf-valor-btn" id="btnLimparAtividadeC3" style="margin-top:4px; margin-bottom:10px;">Limpar atividade</button>
 
       <div id="simplesAnexoWrap_c3">
@@ -1342,6 +1348,16 @@
           <span class="hint">ISS não gera crédito</span>
         </label>
         <input type="number" id="issAliq_c3" value="5" step="0.1">
+        <div class="checkline" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
+          <input type="checkbox" id="issFixoCheck_c3">
+          <label style="margin:0" for="issFixoCheck_c3">ISS fixo (sociedade uniprofissional) — informar o valor anual
+            <span class="hint" style="display:block;">Presumido/Real: usa só esse valor (÷ 12 por mês), sem calcular a alíquota. Simples DAS/Híbrido: a parcela de ISS sai de dentro do DAS e o ISS fixo entra por fora.</span>
+          </label>
+        </div>
+        <div id="issFixoWrap_c3" style="display:none; margin-top:8px;">
+          <label style="margin-top:0">Valor anual do ISS fixo (R$)</label>
+          <input type="text" inputmode="decimal" class="money" id="issFixoAnual_c3" value="0,00">
+        </div>
         <div class="checkline" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
           <input type="checkbox" id="issManualCheck_c3">
           <label style="margin:0" for="issManualCheck_c3">Deseja informar o valor ISS mensal?
@@ -1975,7 +1991,7 @@ const CNAE_LIST = [
 // Número da versão atual do app — atualizar aqui a cada nova versão publicada. Usado tanto no rótulo
 // visível na tela (pra conferir se o que está no ar bate com o que foi publicado no Git) quanto no
 // arquivo de backup exportado (campo "versaoApp"), sem precisar mudar em dois lugares separados.
-const VERSAO_APP = 'v396';
+const VERSAO_APP = 'v398';
 document.getElementById('versaoAppLabel').textContent = '· ' + VERSAO_APP;
 
 const ANEXOS = {
@@ -2638,9 +2654,15 @@ let importsHistoricoC3 = [];
 // receita de cada atividade importada: Σ receita_atividade × (1 − redutor) ÷ Σ receita. Retorna null
 // quando não há receita por atividade nesses meses (aí vale o redutor da atividade principal).
 function fatorRedutorEfetivoC3(chavesMeses){
+  // Com uma atividade só, vale o redutor dela sobre toda a receita (o mapa por atividade pode ter
+  // ficado com a atividade de uma importação antiga — ex.: importado como "comercio" e depois a
+  // atividade trocada pra "regulamentado"; sem isso o redutor de 30% sumia). O mapa só pondera
+  // quando há MAIS de uma atividade ativa, e só com as atividades que estão ativas agora.
+  if (typeof stateAtividadesAtivasC3 === 'undefined' || stateAtividadesAtivasC3.size <= 1) return null;
   const chaves = new Set(chavesMeses);
   let total = 0, ponderado = 0;
   Object.entries(multiAtividadeImportC3).forEach(([ativ, meses])=>{
+    if (!stateAtividadesAtivasC3.has(ativ)) return;
     const red = (typeof ATIVIDADES_C3 !== 'undefined' && ATIVIDADES_C3[ativ]) ? (ATIVIDADES_C3[ativ].redutor||0) : 0;
     (meses||[]).forEach(m=>{
       if (!chaves.has(m.mes+'/'+m.ano)) return;
@@ -2666,6 +2688,14 @@ function receitaImuneNoPeriodoC3(chavesMeses, receitaPeriodo){
   const escala = statePeriodicidadeC3==='trimestral' ? 3 : (statePeriodicidadeC3==='anual' ? 12 : 1);
   const mensal = Math.max(0, getMoney('receitaImuneCbsIbs_c3')) / escala;
   return Math.min(mensal * chavesMeses.length, receitaPeriodo);
+}
+
+// ISS fixo (sociedade uniprofissional) da Aba 2 — valor MENSAL (anual ÷ 12); 0 quando desligado.
+function issFixoMensalC3(){
+  const cb = document.getElementById('issFixoCheck_c3');
+  const temIss = document.getElementById('temIss_c3');
+  if (!cb || !cb.checked || (temIss && !temIss.checked)) return 0;
+  return Math.max(0, getMoney('issFixoAnual_c3')) / 12;
 }
 
 // Aba 1 — receita imune/isenta de CBS/IBS por mês (mesmo modelo da Aba 2).
@@ -3142,10 +3172,11 @@ function calcularSimplesViaMotorTab1(mesesC3){
 
   const tempEl = document.createElement('div');
   window.hibridoApuracaoTrimestralC3 = true;
+  window.issFixoMensalEngine = issFixoMensalC3();
   window.hibridoFatorRedutorC3 = 1 - ((ATIVIDADES_C3[stateAtividadeC3] ? ATIVIDADES_C3[stateAtividadeC3].redutor : 0)/100);
   let totais;
   try { totais = renderizarTabelaApuracao(mesesC3, tempEl, false, 'temp'); }
-  finally { delete window.hibridoApuracaoTrimestralC3; delete window.hibridoFatorRedutorC3; }
+  finally { delete window.hibridoApuracaoTrimestralC3; delete window.hibridoFatorRedutorC3; delete window.issFixoMensalEngine; }
 
   state.anexo = salvo.anexo; state.anexosAtivos = salvo.anexosAtivos; state.anexoIIITransporte = salvo.anexoIIITransporte;
   state.periodo = salvo.periodo;
@@ -3391,7 +3422,8 @@ function perguntarDataInicioECalcularRBT12(meses, rbt12FieldId){
   return true;
 }
 
-function calcularDASParaAnexoNoMes(anexoKey, receita, rbtSafeMes, receitaSTAnexo){
+function calcularDASParaAnexoNoMes(anexoKey, receita, rbtSafeMes, receitaSTAnexo, opts){
+  opts = opts || {};
   const anexoObj = ANEXOS[anexoKey];
   const f = faixaInfo(rbtSafeMes, anexoKey);
   const ehTransporteIII = anexoKey==='III' && state.anexoIIITransporte;
@@ -3408,12 +3440,20 @@ function calcularDASParaAnexoNoMes(anexoKey, receita, rbtSafeMes, receitaSTAnexo
   const isISSEfetivo = anexoObj.isISS && !(anexoKey==='III' && state.anexoIIITransporte);
   const receitaSTSafe = Math.min(receitaSTAnexo||0, receita);
   const receitaSemST = receita - receitaSTSafe;
-  const sublimiteExcedido = rbtSafeMes > SUBLIMITE;
+  const sublimiteExcedido = rbtSafeMes > SUBLIMITE || !!opts.foraPorRBA;
   const cbsElegivel = creditoCbsElegivel(state.periodo);
   const ibsElegivel = creditoIbsElegivel(state.periodo);
   let dasK = receita * aliqEfetiva;
   let substCBS, substISS, totalK, reducaoST = 0;
-  if (sublimiteExcedido){
+  const issFixoK = (isISSEfetivo && (opts.issFixoMensal||0) > 0) ? opts.issFixoMensal : 0;
+  if (issFixoK > 0){
+    reducaoST = receitaSTSafe * aliqEfetiva * pctIcmsIssOnly;
+    const issDentro = receitaSemST * aliqEfetiva * pctIcmsIssOnly;
+    dasK -= reducaoST + issDentro;
+    substCBS = cbsElegivel ? dasK * pctPisCofins : 0;
+    substISS = 0;
+    totalK = dasK + issFixoK;
+  } else if (sublimiteExcedido){
     const faixa5 = anexoObj.faixas[4];
     const aliqEfetivaTeto = (rbtSafeMes * faixa5[1] - faixa5[2]) / rbtSafeMes;
     let brutoPct = aliqEfetivaTeto * (anexoObj.f5.tributo/100);
@@ -3433,6 +3473,20 @@ function calcularDASParaAnexoNoMes(anexoKey, receita, rbtSafeMes, receitaSTAnexo
     totalK = dasK;
   }
   return { totalK, parteSubstituida: substCBS + substISS, creditoCbs: substCBS, creditoIbs: substISS, faixaIdx: f.idx, aliqEfetiva };
+}
+
+// Aviso de ICMS/ISS por fora / exclusão do Simples pela RBA (usado nas tabelas das duas abas).
+function avisoLimitesSimplesHtml(linhasCalculadas){
+  const primeiroFora = linhasCalculadas.find(l=> l.foraPorRBA && !l.excluidoSimples);
+  const primeiroExcluido = linhasCalculadas.find(l=> l.excluidoSimples);
+  let html = '';
+  if (primeiroFora){
+    html += `<div class="notice" style="margin-top:10px;"><b>ICMS/ISS por fora a partir de ${primeiroFora.mes}/${primeiroFora.ano}.</b> A receita bruta acumulada no ano ultrapassou R$ 4.320.000,00 (sublimite de R$ 3.600.000,00 + 20%) — a partir do mês seguinte o ICMS/ISS deixa de ser recolhido no DAS e passa a ser pago em guia própria (LC 123/2006, art. 20, §1º-A).</div>`;
+  }
+  if (primeiroExcluido){
+    html += `<div class="notice" style="margin-top:10px; border-color:var(--alert); color:var(--alert);"><b>Excluída do Simples Nacional a partir de ${primeiroExcluido.mes}/${primeiroExcluido.ano}.</b> A receita bruta acumulada no ano ultrapassou R$ 5.760.000,00 (limite de R$ 4.800.000,00 + 20%) — os efeitos da exclusão valem desde o mês seguinte ao do excesso (LC 123/2006, art. 3º, §9º). Desse mês em diante, DAS e Híbrido ficam zerados: a empresa precisa optar pelo <b>Lucro Presumido ou Lucro Real</b>.</div>`;
+  }
+  return html;
 }
 
 function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal){
@@ -3492,7 +3546,20 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
 
   let rbt12Rolando = rbt12Base;
   let ultimaFaixa = null, ultimaAliq = 0;
+  // Regras de sublimite/limite pela RECEITA BRUTA ACUMULADA NO ANO (RBA), além do RBT12:
+  // • RBA do ano > R$4.320.000 (sublimite + 20%): ICMS/ISS passam a ser pagos POR FORA a partir
+  //   do mês seguinte ao do excesso (LC 123, art. 20 §1º-A);
+  // • RBA do ano > R$5.760.000 (limite + 20%): empresa EXCLUÍDA do Simples a partir do mês
+  //   seguinte (art. 3º §9º) — DAS/Híbrido deixam de existir; a comparação tem que ser pelo
+  //   Presumido/Real.
+  let rbaAnoCorrente = 0, anoCorrenteRBA = null;
+  const issFixoMensalEngine = window.issFixoMensalEngine || 0; // ISS fixo (uniprofissional) por fora — Aba 2
   const linhasCalculadas = meses.map((mes, idx)=>{
+    if (mes.ano !== anoCorrenteRBA){ anoCorrenteRBA = mes.ano; rbaAnoCorrente = 0; }
+    const rbaAntesDoMes = rbaAnoCorrente;
+    rbaAnoCorrente += receitaTotalDoMes(mes);
+    const foraPorRBA = rbaAntesDoMes > SUBLIMITE_GRACA;
+    const excluidoPorRBA = rbaAntesDoMes > LIMITE_EXCLUSAO;
     let rbt12DoMes;
     if (temMesesBaseReais){
       const idxAlvo = linhaDoTempo.findIndex(m=> m.mes===mes.mes && m.ano===mes.ano);
@@ -3511,7 +3578,7 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
     }
     const rbtSafeMes = rbt12DoMes > 0 ? rbt12DoMes : 1;
     const receitaMes = receitaTotalDoMes(mes);
-    const sublimiteExcedidoMes = rbtSafeMes > SUBLIMITE;
+    const sublimiteExcedidoMes = rbtSafeMes > SUBLIMITE || foraPorRBA;
 
     let totalAMes, parteSubstituida, faixaLabel, aliqLabel;
     let creditoCbsMes = 0, creditoIbsMes = 0;
@@ -3526,7 +3593,7 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
           const mST = periodoSTAtual.find(m2=> m2.mes===mes.mes && m2.ano===mes.ano);
           if (mST && mST.porAnexo && mST.porAnexo[anexoKey]) receitaSTAnexo = paraNumeroBR(mST.porAnexo[anexoKey]);
         }
-        const r = calcularDASParaAnexoNoMes(anexoKey, receitaAnexo, rbtSafeMes, receitaSTAnexo);
+        const r = calcularDASParaAnexoNoMes(anexoKey, receitaAnexo, rbtSafeMes, receitaSTAnexo, { foraPorRBA, issFixoMensal: issFixoMensalEngine });
         totalAMes += r.totalK;
         parteSubstituida += r.parteSubstituida;
         creditoCbsMes += r.creditoCbs; creditoIbsMes += r.creditoIbs;
@@ -3555,7 +3622,16 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
       const cbsElegivelMes = creditoCbsElegivel(state.periodo);
       const ibsElegivelMes = creditoIbsElegivel(state.periodo);
 
-      if (sublimiteExcedidoMes){
+      const usarIssFixoMes = isISSEfetivoMes && issFixoMensalEngine > 0;
+      if (usarIssFixoMes){
+        // ISS fixo (uniprofissional): a parcela de ISS sai de dentro do DAS; o valor fixo entra por fora
+        reducaoSTMes = receitaSTMes * aliqEfetivaMes * pctIcmsIssOnly;
+        const issDentroMes = receitaSemSTMes * aliqEfetivaMes * pctIcmsIssOnly;
+        dasMes -= reducaoSTMes + issDentroMes;
+        substCBS = cbsElegivelMes ? dasMes * pctPisCofins : 0;
+        substISS = 0; // ISS fixo não gera crédito de IBS
+        totalAMes = dasMes + issFixoMensalEngine;
+      } else if (sublimiteExcedidoMes){
         // mesma fórmula-teto usada no cálculo manual (aba 1) e no comparativo (aba 3)
         const faixa5 = anexoAtual.faixas[4];
         const aliqEfetivaTetoMes = (rbtSafeMes * faixa5[1] - faixa5[2]) / rbtSafeMes;
@@ -3581,7 +3657,9 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
     const dasReduzido = totalAMes - parteSubstituida;
     // Aba 2: redutor da atividade (art. 261 — ex.: restaurante/bar 40%) reduz a alíquota de SAÍDA do
     // Híbrido, igual ao Presumido/Real; o crédito das entradas continua pela alíquota cheia.
-    let fatorRedutorSaida = window.hibridoFatorRedutorC3 !== undefined ? window.hibridoFatorRedutorC3 : 1;
+    let fatorRedutorSaida = window.hibridoFatorRedutorC3 !== undefined
+      ? window.hibridoFatorRedutorC3
+      : 1 - ((parseFloat((document.getElementById('redutorCbsIbs_c1')||{}).value)||0)/100); // Aba 1: campo "Redução CBS/IBS da atividade (%)"
     if (window.hibridoFatorRedutorC3 !== undefined && typeof fatorRedutorEfetivoC3 === 'function'){
       const fEf = fatorRedutorEfetivoC3([mes.mes+'/'+mes.ano]);
       if (fEf !== null) fatorRedutorSaida = fEf;
@@ -3594,9 +3672,15 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
     const creditoCompras = creditoBaseAtual * ((cbsRateAtual+ibsRateAtual)/100) + creditoComprasFornecedorSimplesParaHibrido;
     const liquidoCbsIbs = Math.max(0, debitoCbsIbs - creditoCompras - creditoEstoqueMensalParaHibrido);
     const hibridoMes = dasReduzido + liquidoCbsIbs;
+    if (excluidoPorRBA){
+      // Excluída do Simples a partir deste mês — DAS/Híbrido não existem mais: zera tudo e marca.
+      return { mes: mes.mes, ano: mes.ano, receitaMes, rbt12Mes: rbt12DoMes, faixaMes: '—', aliqMes: 0,
+        dasMes: 0, hibridoMes: 0, creditoA: 0, creditoACbs: 0, creditoAIbs: 0, creditoB: 0,
+        dasReduzido: 0, debitoCbsIbs: 0, creditoCompras: 0, sublimiteExcedidoMes, excluidoSimples: true, foraPorRBA };
+    }
     return { mes: mes.mes, ano: mes.ano, receitaMes, rbt12Mes: rbt12DoMes, faixaMes: faixaLabel, aliqMes: aliqLabel!==undefined?aliqLabel:ultimaAliq,
       dasMes: totalAMes, hibridoMes, creditoA: parteSubstituida, creditoACbs: creditoCbsMes, creditoAIbs: creditoIbsMes, creditoB: debitoCbsIbs,
-      dasReduzido, debitoCbsIbs, creditoCompras, sublimiteExcedidoMes };
+      dasReduzido, debitoCbsIbs, creditoCompras, sublimiteExcedidoMes, foraPorRBA };
   });
   // Aba 2 (comparativo): o CBS/IBS do Híbrido é apurado por TRIMESTRE-CALENDÁRIO, com o saldo credor
   // transportado pro trimestre seguinte — exatamente a mesma regra do Presumido/Real (calcComp3 via
@@ -3605,11 +3689,11 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
   // Presumido/Real pra mesma receita, mesmas compras e mesma alíquota. O líquido do trimestre é
   // distribuído entre os meses na proporção do débito de cada um. Só roda quando chamado pela Aba 2
   // (window.hibridoApuracaoTrimestralC3) — a Aba 1 continua mês a mês, como sempre.
-  if (window.hibridoApuracaoTrimestralC3){
+  {
     const trimestreDe = l => Math.floor(ORDEM_MESES_PT.indexOf(l.mes)/3) + 1 + '-' + l.ano;
     const gruposTri = {};
     const ordemTri = [];
-    linhasCalculadas.forEach(l=>{ const k = trimestreDe(l); if (!gruposTri[k]){ gruposTri[k] = []; ordemTri.push(k); } gruposTri[k].push(l); });
+    linhasCalculadas.forEach(l=>{ if (l.excluidoSimples) return; const k = trimestreDe(l); if (!gruposTri[k]){ gruposTri[k] = []; ordemTri.push(k); } gruposTri[k].push(l); });
     ordemTri.sort((a,b)=>{ const [qa,ya]=a.split('-'); const [qb,yb]=b.split('-'); return ya!==yb ? ya-yb : qa-qb; });
     let saldoCredorCarry = 0;
     ordemTri.forEach(k=>{
@@ -3644,7 +3728,11 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
     </tr></thead><tbody>`;
   if (mostrarMensal){
     linhasCalculadas.forEach(l=>{
-      const avisoTag = l.sublimiteExcedidoMes ? ` <span title="Sublimite Excedido: RBT12 acima de R$ 3.600.000,00 — o ICMS/ISS desse mês é cobrado por fora do DAS, pela fórmula-teto (5ª faixa), em vez de dentro do Simples normal." style="cursor:help;">⚠️</span>` : '';
+      const avisoTag = l.excluidoSimples
+        ? ` <span title="Excluída do Simples Nacional neste mês (RBA do ano acima de R$ 5.760.000,00 no mês anterior) — DAS/Híbrido não se aplicam; opte pelo Presumido ou Real." style="cursor:help; color:var(--alert);">⛔ excluída</span>`
+        : (l.foraPorRBA
+          ? ` <span title="RBA do ano acima de R$ 4.320.000,00 — ICMS/ISS pago por fora do DAS a partir deste mês." style="cursor:help;">⚠️ ICMS/ISS fora</span>`
+          : (l.sublimiteExcedidoMes ? ` <span title="Sublimite Excedido: RBT12 acima de R$ 3.600.000,00 — o ICMS/ISS desse mês é cobrado por fora do DAS, pela fórmula-teto (5ª faixa), em vez de dentro do Simples normal." style="cursor:help;">⚠️</span>` : ''));
       html += `<tr style="border-top:1px solid var(--line); text-align:right;">
         <td style="text-align:left; padding:6px;">${l.mes}/${l.ano}${avisoTag}</td>
         <td style="padding:6px;">${fmt(l.receitaMes)}</td>
@@ -3715,6 +3803,7 @@ function renderizarTabelaApuracao(meses, resultadoEl, mostrarMensal, tituloTotal
   html += temMesesBaseReais
     ? `<span class="hint" style="display:block; margin-top:8px;">RBT12 <b>exato</b> de cada mês — calculado com os valores reais dos 12 meses anteriores (importados no passo 1) somados aos meses deste período.</span>`
     : `<span class="hint" style="display:block; margin-top:8px;">RBT12 girando por <b>aproximação</b> (sai a média do mês mais antigo, ${fmt(mediaMensalSaindo)}, entra a receita real do mês anterior) — para ficar exato, importe também os 12 meses anteriores no passo 1 antes de importar o período.</span>`;
+  html += avisoLimitesSimplesHtml(linhasCalculadas);
   resultadoEl.innerHTML = html;
   resultadoEl.style.display = 'block';
   document.getElementById('faixaTag').textContent = `Faixa ${ultimaFaixa.idx} (último mês) · alíquota efetiva ${pct(ultimaAliq*100)}`;
@@ -4337,7 +4426,8 @@ function calc(){
   const dasReduzido = totalA - parteSubstituida;
   // Receita imune/isenta de CBS/IBS (regime diferenciado) sai da base do Híbrido — mesmo modelo da Aba 2.
   const imuneMesC1 = typeof receitaImuneNoPeriodoC1 === 'function' ? receitaImuneNoPeriodoC1(['ÚNICO/'], fatMesTotal) : 0;
-  const debitoCbsIbs = Math.max(0, fatMesTotal - imuneMesC1) * ((cbsRate + ibsRate)/100);
+  const fatorRedutorC1 = 1 - ((parseFloat(document.getElementById('redutorCbsIbs_c1').value)||0)/100);
+  const debitoCbsIbs = Math.max(0, fatMesTotal - imuneMesC1) * ((cbsRate + ibsRate)/100) * fatorRedutorC1;
   // Crédito de CBS/IBS nas compras tem DOIS componentes, com fórmulas DIFERENTES (não podem ser
   // ambos multiplicados pela alíquota de CBS/IBS):
   // 1) Compras de fornecedores do Real/Presumido: (compras × % Real/Presumido) × alíquota CBS/IBS —
@@ -4596,6 +4686,59 @@ function formatarCodigoCNAE(codigoNumerico){
   return `${s.slice(0,4)}-${s.slice(4,5)}/${s.slice(5,7)}`;
 }
 function limparCNPJ(v){ return String(v).replace(/\D/g,''); }
+
+// Consulta de CNPJ com VÁRIAS fontes em sequência — a BrasilAPI sozinha falhava com frequência
+// (limite de requisições, instabilidade, resposta lenta). Tenta cada provedor com tempo máximo de
+// 9 segundos; o primeiro que responder vale. Todos devolvem o mesmo formato (razao_social,
+// cnae_fiscal, cnae_fiscal_descricao, cnaes_secundarios[{codigo, descricao}]).
+async function consultarCnpjComFallback(cnpj, aoAvancar){
+  const comTimeout = (url, ms) => {
+    const ctrl = new AbortController();
+    const t = setTimeout(()=>ctrl.abort(), ms);
+    return fetch(url, { signal: ctrl.signal, headers: { 'Accept': 'application/json' } }).finally(()=>clearTimeout(t));
+  };
+  const fontes = [
+    { nome: 'BrasilAPI', url: `https://brasilapi.com.br/api/cnpj/v1/${cnpj}`, mapear: d => d },
+    { nome: 'MinhaReceita', url: `https://minhareceita.org/${cnpj}`, mapear: d => d },
+    { nome: 'CNPJ.ws', url: `https://publica.cnpj.ws/cnpj/${cnpj}`, mapear: d => {
+        const est = d.estabelecimento || {};
+        const limpar = c => String(c||'').replace(/\D/g,'');
+        return {
+          razao_social: d.razao_social,
+          cnae_fiscal: limpar(est.atividade_principal && est.atividade_principal.id),
+          cnae_fiscal_descricao: est.atividade_principal && est.atividade_principal.descricao,
+          cnaes_secundarios: (est.atividades_secundarias||[]).map(a=>({ codigo: limpar(a.id), descricao: a.descricao }))
+        };
+      } },
+    { nome: 'OpenCNPJ', url: `https://api.opencnpj.org/${cnpj}`, mapear: d => {
+        const limpar = c => String(c||'').replace(/\D/g,'');
+        return {
+          razao_social: d.razao_social,
+          cnae_fiscal: limpar(d.cnae_principal),
+          cnae_fiscal_descricao: d.cnae_principal_descricao || '',
+          cnaes_secundarios: (d.cnaes_secundarios||[]).map(c=>({ codigo: limpar(c.codigo||c), descricao: c.descricao||'' }))
+        };
+      } },
+  ];
+  let naoEncontrado = false, ultimoErro = null;
+  for (let i=0; i<fontes.length; i++){
+    const f = fontes[i];
+    if (aoAvancar) aoAvancar(`Buscando na Receita Federal (${f.nome}${i>0 ? ', fonte alternativa' : ''})...`);
+    try {
+      const resp = await comTimeout(f.url, 9000);
+      if (resp.status === 404){ naoEncontrado = true; continue; }
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const bruto = await resp.json();
+      const dados = f.mapear(bruto);
+      if (!dados || !dados.razao_social) throw new Error('resposta sem dados');
+      dados.cnae_fiscal = String(dados.cnae_fiscal||'').replace(/\D/g,'');
+      dados.cnaes_secundarios = (dados.cnaes_secundarios||[]).map(c=>({ codigo: String(c.codigo||'').replace(/\D/g,''), descricao: c.descricao||'' })).filter(c=>c.codigo);
+      return dados;
+    } catch(e){ ultimoErro = e; }
+  }
+  if (naoEncontrado && !ultimoErro) throw new Error('CNPJ não encontrado');
+  throw new Error('nenhuma fonte respondeu agora (' + (ultimoErro ? (ultimoErro.name==='AbortError' ? 'tempo esgotado' : ultimoErro.message) : 'não encontrado') + ') — tente de novo em alguns segundos');
+}
 function validarCNPJ(cnpj){
   cnpj = limparCNPJ(cnpj);
   if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
@@ -4637,9 +4780,7 @@ async function buscarAtividadesPorCNPJ(){
   statusEl.style.display = 'block';
   statusEl.textContent = 'Buscando na Receita Federal...';
   try {
-    const resp = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
-    if (!resp.ok) throw new Error(resp.status === 404 ? 'CNPJ não encontrado' : 'erro na consulta');
-    const dados = await resp.json();
+    const dados = await consultarCnpjComFallback(cnpj, msg => { statusEl.textContent = msg; });
     document.getElementById('clienteNome').value = dados.razao_social || '';
     document.getElementById('clienteCnpj').value = formatarCNPJVisual(cnpj);
     atualizarPainelClienteVisivel();
@@ -4755,9 +4896,7 @@ async function buscarAtividadesPorCNPJC3(){
   statusEl.style.display = 'block';
   statusEl.textContent = 'Buscando na Receita Federal...';
   try {
-    const resp = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
-    if (!resp.ok) throw new Error(resp.status === 404 ? 'CNPJ não encontrado' : 'erro na consulta');
-    const dados = await resp.json();
+    const dados = await consultarCnpjComFallback(cnpj, msg => { statusEl.textContent = msg; });
     document.getElementById('clienteNome').value = dados.razao_social || '';
     document.getElementById('clienteCnpj').value = formatarCNPJVisual(cnpj);
     atualizarPainelClienteVisivel();
@@ -4961,7 +5100,7 @@ buildPeriodos();
 onPeriodoChange();
 
 /* ---------- Tab switching ---------- */
-let abaAtivaClienteC3 = 'simples'; // controla de qual aba (Tab1/Tab2) o painel único de Nome/CNPJ está mostrando o valor
+let abaAtivaClienteC3 = 'comp3'; // controla de qual aba (Tab1/Tab2) o painel único de Nome/CNPJ está mostrando o valor
 function showTab(name){
   document.getElementById('view-simples').classList.toggle('active', name==='simples');
   document.getElementById('view-comp3').classList.toggle('active', name==='comp3');
@@ -5309,6 +5448,15 @@ function toggleAtividadeC3(k){
 const ANEXO_PARA_ATIVIDADE_C3 = { I:'comercio', II:'comercio', III:'servico', IV:'servico', V:'servico' };
 
 function importarDadosDaAba2ParaAba1(){
+  // Redutor de CBS/IBS da atividade escolhida na Aba 2 + regime/receita imune — pro Híbrido bater nas duas abas
+  const redC3 = ATIVIDADES_C3[stateAtividadeC3] ? (ATIVIDADES_C3[stateAtividadeC3].redutor||0) : 0;
+  document.getElementById('redutorCbsIbs_c1').value = redC3;
+  document.getElementById('regimeCbsIbs_c1').value = document.getElementById('regimeCbsIbs_c3').value;
+  document.getElementById('receitaImuneCbsIbs_c1').value = document.getElementById('receitaImuneCbsIbs_c3').value;
+  document.getElementById('imune100PctCheck_c1').checked = document.getElementById('imune100PctCheck_c3').checked;
+  document.getElementById('imuneManualCheck_c1').checked = document.getElementById('imuneManualCheck_c3').checked;
+  window.imunePorMesC1 = JSON.parse(JSON.stringify(window.imunePorMesC3 || {}));
+  aplicarRegimeCbsIbsC3('_c1'); sincronizarOpcoesImune('_c1'); renderizarCamposImuneC1();
   // Cliente e identificação
   document.getElementById('clienteNome').value = document.getElementById('clienteNome')?.value || state3.clienteNome || '';
   document.getElementById('clienteCnpj').value = document.getElementById('clienteCnpj')?.value || state3.clienteCnpj || '';
@@ -5370,6 +5518,13 @@ function sincronizarComprasDespesasAba1ParaAba2(forcar){
 }
 
 function importarDadosDaAba1ParaAba2(){
+  // Regime diferenciado / receita imune da Aba 1 → Aba 2 (o redutor na Aba 2 vem da atividade escolhida lá)
+  document.getElementById('regimeCbsIbs_c3').value = document.getElementById('regimeCbsIbs_c1').value;
+  document.getElementById('receitaImuneCbsIbs_c3').value = document.getElementById('receitaImuneCbsIbs_c1').value;
+  document.getElementById('imune100PctCheck_c3').checked = document.getElementById('imune100PctCheck_c1').checked;
+  document.getElementById('imuneManualCheck_c3').checked = document.getElementById('imuneManualCheck_c1').checked;
+  window.imunePorMesC3 = JSON.parse(JSON.stringify(window.imunePorMesC1 || {}));
+  aplicarRegimeCbsIbsC3('_c3'); sincronizarOpcoesImune('_c3');
   // Cliente e identificação
   const nomeVal = document.getElementById('clienteNome')?.value.trim();
   const cnpjClienteVal = document.getElementById('clienteCnpj')?.value.trim();
@@ -6612,9 +6767,10 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
     const linhaSimples = linhasPorMes ? linhasPorMes[idx] : null;
     const das = linhaSimples ? linhaSimples.dasMes : 0;
     const hib = linhaSimples ? linhaSimples.hibridoMes : 0;
+    const flagSimples = linhaSimples ? (linhaSimples.excluidoSimples ? ' ⛔' : (linhaSimples.foraPorRBA ? ' ⚠️' : '')) : '';
     const presReal = presRealPorMes[mes.mes+'/'+mes.ano] || {totalPres:0, totalReal:0};
     totais.das += das; totais.hib += hib; totais.pres += presReal.totalPres; totais.real += presReal.totalReal;
-    return { mes: mes.mes, ano: mes.ano, receita: receitaMes, receitaComercio: receitaComercioMes, receitaServico: receitaServicoMes, das, hib, pres: presReal.totalPres, real: presReal.totalReal, trimestre: `${trimestreDoMesCalendario(mes.mes)}º trimestre ${mes.ano}` };
+    return { mes: mes.mes + flagSimples, ano: mes.ano, receita: receitaMes, receitaComercio: receitaComercioMes, receitaServico: receitaServicoMes, das, hib, pres: presReal.totalPres, real: presReal.totalReal, trimestre: `${trimestreDoMesCalendario(mes.mes)}º trimestre ${mes.ano}` };
   });
   // Sempre mostra as 2 colunas separadas (mesmo que um dos tipos seja R$0,00 em todo o período) —
   // mesmo critério do card único (quadro "Receita do período" no topo da tela), pra manter consistência.
@@ -6684,6 +6840,7 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
       </tr>`;
   }
   html += `</tbody></table>`;
+  if (linhasPorMes) html += avisoLimitesSimplesHtml(linhasPorMes);
 
   // "Crédito repassado ao comprador" (DAS): é o PIS/COFINS (→CBS) e ICMS/ISS (→IBS) já embutidos no
   // próprio DAS pago no período (totalCreditoACbsIbs, calculado abaixo linha a linha pela % de
@@ -6954,12 +7111,15 @@ function gerarMemoriaCalculoC3(mesesOrdenados, opcoes){
         let issValor;
         if (issManualAtivoMC){
           issValor = g.meses.reduce((s,m)=> s + (window.issManualPorMesC3[m.mes+'/'+m.ano]||0), 0);
+        } else if (issFixoMensalC3() > 0){
+          issValor = issFixoMensalC3() * g.meses.length;
         } else {
           const issAliqMC = parseFloat(document.getElementById('issAliq_c3').value)||0;
           issValor = receitaServico * (issAliqMC/100); // ISS só sobre a receita de Serviços
         }
+        const issRotuloMC = issManualAtivoMC ? '(informado manualmente)' : (issFixoMensalC3() > 0 ? `(ISS fixo: ${fmt(issFixoMensalC3())}/mês × ${g.meses.length} ${g.meses.length===1?'mês':'meses'})` : `(${document.getElementById('issAliq_c3').value}% s/ receita de Serviços ${fmt(receitaServico)})`);
         html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);">
-          <div class="line"><span>ISS ${issManualAtivoMC ? '(informado manualmente)' : `(${document.getElementById('issAliq_c3').value}% s/ receita de Serviços ${fmt(receitaServico)})`}</span><span>${fmt(issValor)}</span></div>
+          <div class="line"><span>ISS ${issRotuloMC}</span><span>${fmt(issValor)}</span></div>
         </div>`;
       }
     }
@@ -7420,16 +7580,28 @@ function calcComp3(){
       fRef = f; anexoRef = anexoK;
       const aliqEfetivaK = Math.max(0, ((rbt12 * f.aliq) - f.pd) / rbt12);
       let dasK = receitaK * aliqEfetivaK;
+      // ISS fixo (uniprofissional): a parcela de ISS sai de dentro do DAS desse Anexo e o valor fixo
+      // entra por fora (mesmo tratamento do "ISS pago à parte" do sublimite).
+      const issFixoMensalEqK = (anexoK.isISS && !(k==='III' && state3.anexoIIITransporte) && temIss) ? issFixoMensalC3() * (window.numMesesRealAtualC3 || escalaPeriodo) / escalaPeriodo : 0;
+      const usarIssFixoK = issFixoMensalEqK > 0;
 
-      if (sublimiteExcedido){
+      if (usarIssFixoK && !sublimiteExcedido){
+        const pctIcmsIssOnly = anexoK.porFaixa[f.idx-1].tributo / 100;
+        const issDentroK = receitaSemSTK * aliqEfetivaK * pctIcmsIssOnly;
+        const reducaoSTK = receitaSTK * aliqEfetivaK * pctIcmsIssOnly;
+        dasK -= reducaoSTK + issDentroK;
+        tributoForaMensal += issFixoMensalEqK;
+        const pctPisCofins = (anexoK.porFaixa[f.idx-1].pis + anexoK.porFaixa[f.idx-1].cofins) / 100;
+        substCBS_das += cbsElegivelC3 ? dasK * pctPisCofins : 0; // ISS fixo não gera crédito de IBS
+      } else if (sublimiteExcedido){
         const faixa5 = anexoK.faixas[4];
         const aliqEfetivaTetoK = (rbt12 * faixa5[1] - faixa5[2]) / rbt12;
         let brutoPctK = aliqEfetivaTetoK * (anexoK.f5.tributo/100);
         if (anexoK.isISS) brutoPctK = Math.min(brutoPctK, 0.05);
         const tributoForaOficialK = receitaSemSTK * brutoPctK;
 
-        let tributoForaK = tributoForaOficialK;
-        if (!multiAnexo && document.getElementById('icmsForaNormalCheckC3').checked){
+        let tributoForaK = usarIssFixoK ? issFixoMensalEqK : tributoForaOficialK;
+        if (!usarIssFixoK && !multiAnexo && document.getElementById('icmsForaNormalCheckC3').checked){
           const debitoNormalK = receitaSemSTK * (icmsDebitoAliq/100);
           const creditoNormalK = creditoBaseRP * (icmsAliq/100);
           tributoForaK = Math.max(0, debitoNormalK - creditoNormalK);
@@ -7438,7 +7610,7 @@ function calcComp3(){
 
         const pctPisCofinsF6 = (anexoK.f6.pis + anexoK.f6.cofins) / 100;
         const substCBS_K = cbsElegivelC3 ? dasK * pctPisCofinsF6 : 0;
-        const substIBS_K = ibsElegivelC3 ? tributoForaK : 0;
+        const substIBS_K = (ibsElegivelC3 && !usarIssFixoK) ? tributoForaK : 0;
         substCBS_das += substCBS_K; substIBS_das += substIBS_K;
       } else {
         const pctIcmsIssOnly = anexoK.porFaixa[f.idx-1].tributo / 100;
@@ -7459,7 +7631,15 @@ function calcComp3(){
     const receitaSemST = receitaSemSTTotal;
     const receita_multi = receitaTotalAnexos; // total agregado, usado no crédito/híbrido abaixo
 
-    if (sublimiteExcedido){
+    const temIssFixoForaC3 = tributoForaMensal > 0 && !sublimiteExcedido;
+    if (temIssFixoForaC3){
+      document.getElementById('icmsForaNormalCheckRow_c3').style.display = 'none';
+      document.getElementById('c3_das_fora_normal_row').style.display = 'none';
+      document.getElementById('c3_das_fora_row').style.display = 'flex';
+      document.getElementById('c3_das_fora_label').textContent = 'ISS fixo pago à parte (fora do DAS)';
+      document.getElementById('c3_das_fora').textContent = fmtP(tributoForaMensal);
+      rbaAlerta.style.display = 'none';
+    } else if (sublimiteExcedido){
       document.getElementById('icmsForaNormalCheckRow_c3').style.display = multiAnexo ? 'none' : 'flex';
       document.getElementById('c3_das_fora_normal_row').style.display = (!multiAnexo && document.getElementById('icmsForaNormalCheckC3').checked) ? 'flex' : 'none';
       if (!multiAnexo){
@@ -7617,8 +7797,12 @@ function calcComp3(){
   // "Deseja informar o percentual ISS mensal?" — mesma lógica do ICMS: soma mês a mês quando
   // disponível o contexto do trimestre específico, senão soma todos os meses carregados.
   const issManualAtivo = temIss && document.getElementById('issManualCheck_c3').checked;
+  const issFixoAtivo = temIss && issFixoMensalC3() > 0;
   let issDebito;
-  if (issManualAtivo){
+  if (issFixoAtivo){
+    // ISS fixo anual ÷ 12 por mês × nº real de meses do período (igual à folha), em mensal-equivalente
+    issDebito = issFixoMensalC3() * (window.numMesesRealAtualC3 || escalaPeriodo) / escalaPeriodo;
+  } else if (issManualAtivo){
     if (window.issManualOverrideAtualC3 !== undefined){
       issDebito = window.issManualOverrideAtualC3 / escalaPeriodo;
     } else {
@@ -8385,6 +8569,12 @@ document.getElementById('imune100PctCheck_c3').addEventListener('change', functi
   sincronizarOpcoesImune('_c3');
   calcComp3();
 });
+document.getElementById('redutorCbsIbs_c1').addEventListener('input', recalcularTudoAba1);
+document.getElementById('issFixoCheck_c3').addEventListener('change', function(){
+  document.getElementById('issFixoWrap_c3').style.display = this.checked ? 'block' : 'none';
+  calcComp3();
+});
+document.getElementById('issFixoAnual_c3').addEventListener('input', calcComp3);
 // ---- Aba 1: regime diferenciado de CBS/IBS (mesmo modelo da Aba 2) ----
 buildRegimeCbsIbsC3('_c1'); aplicarRegimeCbsIbsC3('_c1');
 document.getElementById('regimeCbsIbs_c1').addEventListener('change', ()=>{ aplicarRegimeCbsIbsC3('_c1'); recalcularTudoAba1(); });
@@ -9102,8 +9292,8 @@ function importarSimulacao(file){
         state3.clienteNome = est.state3.clienteNome || ''; state3.clienteCnpj = est.state3.clienteCnpj || '';
       }
       // o painel de Nome/CNPJ é único na tela — mostra o valor da aba que estiver ativa no momento
-      document.getElementById('clienteNome').value = (abaAtivaClienteC3==='simples' ? state.clienteNome : state3.clienteNome) || '';
-      document.getElementById('clienteCnpj').value = (abaAtivaClienteC3==='simples' ? state.clienteCnpj : state3.clienteCnpj) || '';
+      document.getElementById('clienteNome').value = (abaAtivaClienteC3==='simples' ? state.clienteNome : state3.clienteNome) || state.clienteNome || '';
+      document.getElementById('clienteCnpj').value = (abaAtivaClienteC3==='simples' ? state.clienteCnpj : state3.clienteCnpj) || state.clienteCnpj || '';
       atualizarPainelClienteVisivel();
       if (est.stateAtividadeC3) stateAtividadeC3 = est.stateAtividadeC3;
       if (est.stateAtividadesAtivasC3) stateAtividadesAtivasC3 = new Set(est.stateAtividadesAtivasC3);
@@ -9155,6 +9345,7 @@ function importarSimulacao(file){
       document.getElementById('lucroManualWrap_c3').style.display = document.getElementById('lucroManualCheck_c3').checked ? 'block' : 'none';
       document.getElementById('finManualWrap_c3').style.display = document.getElementById('finManualCheck_c3').checked ? 'block' : 'none';
       sincronizarOpcoesImune('_c3');
+      document.getElementById('issFixoWrap_c3').style.display = document.getElementById('issFixoCheck_c3').checked ? 'block' : 'none';
       aplicarRegimeCbsIbsC3();
       // Aba 1 — regime diferenciado (mesmo modelo)
       aplicarRegimeCbsIbsC3('_c1'); sincronizarOpcoesImune('_c1'); renderizarCamposImuneC1();
