@@ -808,7 +808,7 @@
         <div class="row2" style="margin-top:10px">
           <div>
             <label style="margin-top:0">CBS (%)</label>
-            <input type="number" id="cbsRate" step="0.01" value="9.21">
+            <input type="number" id="cbsRate" step="0.01" value="11.3">
           </div>
           <div>
             <label style="margin-top:0">IBS (%)</label>
@@ -1511,7 +1511,7 @@
         <div class="row2" style="margin-top:10px">
           <div>
             <label style="margin-top:0">CBS (%)</label>
-            <input type="number" id="cbsAliq_c3" value="9.21" step="0.01">
+            <input type="number" id="cbsAliq_c3" value="11.3" step="0.01">
           </div>
           <div>
             <label style="margin-top:0">IBS (%)</label>
@@ -1991,7 +1991,7 @@ const CNAE_LIST = [
 // Número da versão atual do app — atualizar aqui a cada nova versão publicada. Usado tanto no rótulo
 // visível na tela (pra conferir se o que está no ar bate com o que foi publicado no Git) quanto no
 // arquivo de backup exportado (campo "versaoApp"), sem precisar mudar em dois lugares separados.
-const VERSAO_APP = 'v398';
+const VERSAO_APP = 'v400';
 document.getElementById('versaoAppLabel').textContent = '· ' + VERSAO_APP;
 
 const ANEXOS = {
@@ -2069,9 +2069,9 @@ const LIMITE_EXCLUSAO = LIMITE * 1.20;      // 5.760.000 — acima disso, fora d
 
 const PERIODOS = [
   { id:"2026", label:"2026 — fase de teste", cbs:0.00, ibs:0.00 },
-  { id:"2027", label:"2027–2028 — transição inicial", cbs:9.21, ibs:0.00 },
-  { id:"2029", label:"2029–2032 — transição intermediária", cbs:9.21, ibs:10.00 },
-  { id:"2033", label:"2033 — regime pleno (referência)", cbs:9.21, ibs:18.50 },
+  { id:"2027", label:"2027–2028 — transição inicial", cbs:11.3, ibs:0.00 },
+  { id:"2029", label:"2029–2032 — transição intermediária", cbs:11.3, ibs:10.00 },
+  { id:"2033", label:"2033 — regime pleno (referência)", cbs:11.3, ibs:18.50 },
 ];
 function detectarPeriodoPorAno(ano){
   const a = parseInt(ano, 10);
@@ -6331,6 +6331,8 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
     grupos[chave].meses.push(mes.mes+'/'+mes.ano);
     if (linhaSimples){
       grupos[chave].das += linhaSimples.dasMes; grupos[chave].hib += linhaSimples.hibridoMes;
+      grupos[chave].faixas = grupos[chave].faixas || [];
+      grupos[chave].faixas.push({ mes: mes.mes, faixa: linhaSimples.faixaMes, aliq: linhaSimples.aliqMes, rbt12: linhaSimples.rbt12Mes, excluido: !!linhaSimples.excluidoSimples });
       grupos[chave].dasReduzido += linhaSimples.dasReduzido;
       grupos[chave].creditoACbs += linhaSimples.creditoACbs; grupos[chave].creditoAIbs += linhaSimples.creditoAIbs;
       grupos[chave].debitoCbsIbs += linhaSimples.debitoCbsIbs; grupos[chave].creditoCompras += linhaSimples.creditoCompras;
@@ -6549,6 +6551,24 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
       <span>${fmt(total)}</span>
     </div>`;
   };
+  // Linha de TEXTO (não valor) por trimestre — usada pra mostrar faixa/alíquota efetiva do Simples.
+  const linhaTextoHtml = (label, textoFn, textoTotal)=>`<div class="linha-multi" style="grid-template-columns:${gridCols}; font-size:11.5px; color:var(--body);">
+      <span>${label}</span>
+      ${chaves.map(c=>`<span>${textoFn(c)}</span>`).join('')}
+      <span>${textoTotal||''}</span>
+    </div>`;
+  // Faixa/alíquota efetiva do Simples no trimestre: mostra a faixa de cada mês (quando mudam) e a
+  // alíquota efetiva média do trimestre (DAS ÷ receita).
+  const faixaAliqTrimestreTxt = c=>{
+    const g = grupos[c];
+    if (!g.faixas || !g.faixas.length) return '—';
+    const validas = g.faixas.filter(f=>!f.excluido);
+    if (!validas.length) return 'excluída';
+    const faixasUnicas = [...new Set(validas.map(f=>String(f.faixa)))];
+    const faixaTxt = faixasUnicas.length === 1 ? `Faixa ${faixasUnicas[0]}` : `Faixas ${validas.map(f=>f.faixa).join('/')}`;
+    const aliqMedia = g.receita > 0 ? g.das/g.receita : 0;
+    return `${faixaTxt} · ${pct(aliqMedia*100)}`;
+  };
   // Variante de linhaHtml pras linhas "Valor pago"/"diferença" — só fazem sentido pro TOTAL do
   // período (o "valor pago" é uma referência única, não por trimestre), então as colunas de cada
   // trimestre ficam vazias e só a última coluna ("Total geral") mostra o valor.
@@ -6582,6 +6602,7 @@ function renderizarTrimestresLadoALadoC3(mesesOrdenados, opcoes){
       <h3>CBS/IBS dentro do DAS</h3>
       ${cabecalhoHtml}
       ${linhaHtml('Receita', c=>grupos[c].receita)}
+      ${linhaTextoHtml('Faixa · alíquota efetiva', faixaAliqTrimestreTxt, (()=>{ const r=chaves.reduce((s,c)=>s+grupos[c].receita,0), d=chaves.reduce((s,c)=>s+grupos[c].das,0); return r>0 ? `média ${pct(d/r*100)}` : ''; })())}
       ${linhaHtml('DAS federal (reduzido)', c=>grupos[c].dasReduzido)}
       ${linhaHtml('↳ substituído por CBS', c=>grupos[c].creditoACbs)}
       ${linhaHtml('↳ substituído por IBS', c=>grupos[c].creditoAIbs)}
@@ -6770,19 +6791,24 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
     const flagSimples = linhaSimples ? (linhaSimples.excluidoSimples ? ' ⛔' : (linhaSimples.foraPorRBA ? ' ⚠️' : '')) : '';
     const presReal = presRealPorMes[mes.mes+'/'+mes.ano] || {totalPres:0, totalReal:0};
     totais.das += das; totais.hib += hib; totais.pres += presReal.totalPres; totais.real += presReal.totalReal;
-    return { mes: mes.mes + flagSimples, ano: mes.ano, receita: receitaMes, receitaComercio: receitaComercioMes, receitaServico: receitaServicoMes, das, hib, pres: presReal.totalPres, real: presReal.totalReal, trimestre: `${trimestreDoMesCalendario(mes.mes)}º trimestre ${mes.ano}` };
+    const faixaTxt = linhaSimples ? (linhaSimples.excluidoSimples ? 'excluída' : `F${linhaSimples.faixaMes} · ${pct((linhaSimples.aliqMes||0)*100)}`) : '';
+    return { mes: mes.mes + flagSimples, ano: mes.ano, receita: receitaMes, receitaComercio: receitaComercioMes, receitaServico: receitaServicoMes, das, hib, pres: presReal.totalPres, real: presReal.totalReal, faixaTxt, trimestre: `${trimestreDoMesCalendario(mes.mes)}º trimestre ${mes.ano}` };
   });
   // Sempre mostra as 2 colunas separadas (mesmo que um dos tipos seja R$0,00 em todo o período) —
   // mesmo critério do card único (quadro "Receita do período" no topo da tela), pra manter consistência.
   const mostrarSplitComercioServico = true;
 
   const valores = { das:'das', hib:'hib', pres:'pres', real:'real' };
+  // Coluna "Faixa · alíquota efetiva" do Simples (só quando DAS ou Híbrido estão na comparação)
+  const mostrarFaixaCol = !!(opcoes.incluirSimplesDAS || opcoes.incluirSimplesHibrido);
+  const tdFaixa = txt => mostrarFaixaCol ? `<td style="text-align:right; padding:6px; white-space:nowrap; color:var(--body);">${txt||''}</td>` : '';
   let html = `<table style="width:100%; border-collapse:collapse; font-family:'IBM Plex Mono',monospace; font-size:11.5px;">
     <thead><tr style="border-bottom:2px solid var(--line);">
       <th style="text-align:left; padding:6px;">Mês</th>
       ${mostrarSplitComercioServico
         ? `<th style="text-align:right; padding:6px;">Receita Com./Ind.</th><th style="text-align:right; padding:6px;">Receita Serviços</th>`
         : `<th style="text-align:right; padding:6px;">Receita</th>`}
+      ${mostrarFaixaCol ? `<th style="text-align:right; padding:6px;" title="Faixa do Simples pelo RBT12 do mês e alíquota efetiva (DAS ÷ receita)">Faixa · alíq. Simples</th>` : ''}
       ${colunas.map(c=>`<th style="text-align:right; padding:6px;">${c.label}</th>`).join('')}
     </tr></thead><tbody>`;
   let subtotalAtual = {das:0, hib:0, pres:0, real:0, receita:0, receitaComercio:0, receitaServico:0, count:0};
@@ -6792,6 +6818,7 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
       ${mostrarSplitComercioServico
         ? `<td style="text-align:right; padding:6px;">${fmt(l.receitaComercio)}</td><td style="text-align:right; padding:6px;">${fmt(l.receitaServico)}</td>`
         : `<td style="text-align:right; padding:6px;">${fmt(l.receita)}</td>`}
+      ${tdFaixa(l.faixaTxt)}
       ${colunas.map(c=>`<td style="text-align:right; padding:6px;">${fmt(l[valores[c.key]])}</td>`).join('')}
     </tr>`;
     subtotalAtual.das += l.das; subtotalAtual.hib += l.hib; subtotalAtual.pres += l.pres; subtotalAtual.real += l.real;
@@ -6803,6 +6830,7 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
         ${mostrarSplitComercioServico
           ? `<td style="text-align:right; padding:6px;">${fmt(subtotalAtual.receitaComercio)}</td><td style="text-align:right; padding:6px;">${fmt(subtotalAtual.receitaServico)}</td>`
           : `<td style="text-align:right; padding:6px;">${fmt(subtotalAtual.receita)}</td>`}
+        ${tdFaixa(subtotalAtual.receita>0 && (subtotalAtual.das>0) ? `média ${pct(subtotalAtual.das/subtotalAtual.receita*100)}` : '')}
         ${colunas.map(c=>`<td style="text-align:right; padding:6px;">${fmt(subtotalAtual[c.key])}</td>`).join('')}
       </tr>`;
       subtotalAtual = {das:0, hib:0, pres:0, real:0, receita:0, receitaComercio:0, receitaServico:0, count:0};
@@ -6816,6 +6844,7 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
       ${mostrarSplitComercioServico
         ? `<td style="text-align:right; padding:6px;">${fmt(receitaComercioTotal)}</td><td style="text-align:right; padding:6px;">${fmt(receitaServicoTotal)}</td>`
         : `<td style="text-align:right; padding:6px;">${fmt(receitaTotal)}</td>`}
+      ${tdFaixa(receitaTotal>0 && totais.das>0 ? `média ${pct(totais.das/receitaTotal*100)}` : '')}
       ${colunas.map(c=>`<td style="text-align:right; padding:6px;">${fmt(totais[c.key])}</td>`).join('')}
     </tr>`;
   // Comparação com o valor pago (campo "pago2026_c3") — direto na própria tabela, alinhada por
@@ -6825,12 +6854,12 @@ function renderizarTabelaMensalC3(mesesOrdenados, opcoes){
     const colspanReceita = mostrarSplitComercioServico ? 2 : 1;
     html += `<tr style="font-size:12px; color:var(--body);">
         <td style="padding:4px 6px;">Valor pago (referência)</td>
-        <td colspan="${colspanReceita}"></td>
+        <td colspan="${colspanReceita + (mostrarFaixaCol?1:0)}"></td>
         ${colunas.map(()=>`<td style="text-align:right; padding:4px 6px;">${fmt(pago2026TotalGeral)}</td>`).join('')}
       </tr>
       <tr style="font-size:12px;">
         <td style="padding:4px 6px;">↳ Aumento/Redução do imposto a pagar</td>
-        <td colspan="${colspanReceita}"></td>
+        <td colspan="${colspanReceita + (mostrarFaixaCol?1:0)}"></td>
         ${colunas.map(c=>{
           const diff = totais[c.key] - pago2026TotalGeral;
           const cor = diff <= 0 ? 'var(--credit)' : 'var(--alert)';
